@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refeitório Inteligente - Gestão Unificada</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root { 
+            --primary: #1b5e20; 
+            --accent: #fbc02d; 
+            --danger: #d32f2f; 
+            --bg: #f0f4f0; 
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding-bottom: 70px; 
+            color: #333; 
+        }
+        
+        header { 
+            background: var(--primary); 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            border-bottom: 4px solid var(--accent);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        nav { 
+            display: flex; 
+            background: white; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+
+        nav button { 
+            flex: 1; 
+            padding: 15px; 
+            border: none; 
+            background: none; 
+            font-weight: bold; 
+            color: var(--primary); 
+            cursor: pointer; 
+            transition: 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        nav button:hover, nav button.active-tab { 
+            background: #e8f5e9; 
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .container { width: 94%; max-width: 650px; margin: 20px auto; }
+
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            margin-bottom: 20px; 
+        }
+
+        .section { display: none; animation: fadeIn 0.4s; }
+        .active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        input, .btn { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 8px; 
+            border: 1px solid #ddd; 
+            box-sizing: border-box; 
+            font-size: 16px; 
+        }
+        
+        .btn-main { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-predict { background: #558b2f; color: white; border: none; font-weight: bold; cursor: pointer;}
+        .btn-export { background: #0277bd; color: white; border: none; font-weight: bold; cursor: pointer;}
+        .btn-danger { background: white; color: var(--danger); border: 1px solid var(--danger); font-weight: bold; cursor: pointer;}
+
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
+        
+        #qrcode-display { 
+            display: flex; flex-direction: column; align-items: center; 
+            margin-top: 15px; border: 2px dashed var(--primary); padding: 15px; 
+            background: #fafafa; border-radius: 8px;
+        }
+
+        .prediction-box { background: #e8f5e9; padding: 15px; border-radius: 8px; border-left: 5px solid var(--primary); margin-top: 10px; }
+        .alert-waste { color: var(--danger); font-weight: bold; margin-top: 10px; }
+        .success-waste { color: var(--primary); font-weight: bold; margin-top: 10px; }
+
+        .chart-container { position: relative; height: 250px; width: 100%; }
+
+        /* Estilos para a lista de alunos */
+        .lista-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .user-item { 
+            display: flex; justify-content: space-between; padding: 12px; 
+            border-bottom: 1px solid #eee; font-size: 14px; align-items: center;
+        }
+        .user-item:last-child { border-bottom: none; }
+        .user-item:nth-child(even) { background-color: #fafafa; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-name { font-weight: bold; color: #333; }
+        .user-id { font-size: 12px; color: #666; }
+        .user-hash { font-size: 10px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #555; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 style="margin: 0; font-size: 24px;">Refeitório Inteligente</h1>
+    <small>Gestão de Frequência e Zero Desperdício</small>
+</header>
+
+<nav>
+    <button id="tab-scan" class="active-tab" onclick="showSection('scan', this)">📸 SCAN</button>
+    <button id="tab-alunos" onclick="showSection('alunos', this)">👥 ALUNOS</button>
+    <button id="tab-dados" onclick="showSection('dados', this)">📊 DADOS</button>
+</nav>
+
+<div class="container">
+    
+    <div id="scan" class="section active">
+        <div class="card">
+            <h2>Validar Refeição</h2>
+            <div id="reader"></div>
+            <div id="scan-msg" style="text-align: center; margin-top: 15px; font-size: 18px; font-weight: bold; min-height: 28px;"></div>
+        </div>
+    </div>
+
+    <div id="alunos" class="section">
+        <div class="card">
+            <h2>1. Importar Base de Dados</h2>
+            <p style="font-size: 13px; color: #666;">Formato esperado do arquivo .csv: <code>Nome,Matricula</code></p>
+            <input type="file" id="csvFile" accept=".csv" class="btn">
+            <button class="btn btn-predict" onclick="importarCSV()">📥 Carregar Alunos (.csv)</button>
+        </div>
+
+        <div class="card">
+            <h2>2. Cadastro Manual</h2>
+            <input type="text" id="reg-nome" placeholder="Nome Completo do Aluno">
+            <input type="text" id="reg-id" placeholder="Matrícula ou Turma">
+            <button class="btn btn-main" onclick="salvarNovoAluno()">➕ Cadastrar e Gerar QR Code</button>
+            
+            <div id="qrcode-display" style="display: none;">
+                <div id="canvas-qr"></div>
+                <p id="qr-info" style="font-weight: bold; text-align: center; margin: 10px 0;"></p>
+                <button class="btn" style="width: auto; padding: 8px 20px;" onclick="fecharQR()">Fechar QR Code</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>3. Alunos Cadastrados</h2>
+            <p style="font-size: 14px; margin-bottom: 0;" id="contador-alunos">Total: 0 alunos</p>
+            <div class="lista-container" id="lista-alunos">
+                </div>
+        </div>
+    </div>
+
+    <div id="dados" class="section">
+        <div class="card">
+            <h2>Cálculo de Produção Ideal</h2>
+            <p style="font-size: 14px; color: #555;">Com base nos últimos dias de consumo:</p>
+            <div id="previsao-resultado" class="prediction-box">
+                Carregando dados...
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Análise de Frequência</h3>
+            <div class="chart-container">
+                <canvas id="graficoFrequencia"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Simulador de Desperdício</h3>
+            <label style="font-size: 14px; font-weight: bold;">Refeições preparadas hoje:</label>
+            <input type="number" id="input-produzido" placeholder="Ex: 350" oninput="simularDesperdicio()">
+            <div id="resultado-simulacao" class="alert-waste">Aguardando valor...</div>
+        </div>
+
+        <div class="card">
+            <h3>Gestão do Sistema</h3>
+            <button class="btn btn-export" onclick="exportarCSVLogs()">📥 Exportar Histórico de Refeições (.csv)</button>
+            <button class="btn btn-danger" onclick="limparTudo()">⚠️ Resetar Sistema (Apagar Tudo)</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- DATABASE EM MEMÓRIA (Persistido no LocalStorage) ---
+    let db_alunos = JSON.parse(localStorage.getItem('escola_alunos')) || [];
+    let db_logs = JSON.parse(localStorage.getItem('escola_logs')) || [];
+    let scanner;
+    let chartInstance;
+
+    // Inicialização
+    window.onload = () => {
+        // Inicializa na aba do scanner
+        ligarCamera();
+    };
+
+    // --- NAVEGAÇÃO ---
+    function showSection(id, btnElement) {
+        // Controle de visibilidade das seções
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        
+        // Controle visual dos botões
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab'));
+        btnElement.classList.add('active-tab');
+        
+        // Lógica específica por aba
+        if (id === 'scan') {
+            ligarCamera();
+        } else {
+            desligarCamera();
+        }
+
+        if (id === 'alunos') {
+            renderizarListaAlunos();
+        }
+
+        if (id === 'dados') {
+            calcularPrevisao();
+        }
+    }
+
+    // ==========================================
+    // ABA: ALUNOS (Cadastro, Importação e Lista)
+    // ==========================================
+
+    function importarCSV() {
+        const file = document.getElementById('csvFile').files[0];
+        if (!file) return alert("Selecione um arquivo .csv primeiro!");
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const linhas = e.target.result.split('\n');
+            let adicionados = 0;
+
+            linhas.forEach(l => {
+                const col = l.split(',');
+                if (col.length >= 2 && col[0].trim() !== "") {
+                    const nome = col[0].trim();
+                    const id = col[1].trim();
+                    const hash = btoa(nome + id).substring(0, 10);
+                    
+                    // Evita duplicatas pelo hash
+                    if (!db_alunos.find(a => a.hash === hash)) {
+                        db_alunos.push({ nome, id, hash });
+                        adicionados++;
+                    }
+                }
+            });
+            
+            localStorage.setItem('escola_alunos', JSON.stringify(db_alunos));
+            alert(`Importação concluída! ${adicionados} novos alunos adicionados.`);
+            document.getElementById('csvFile').value = ""; // Limpa o input
+            renderizarListaAlunos();
+        };
+        reader.readAsText(file);
+    }
+
+    function salvarNovoAluno() {
+        const nome = document.getElementById('reg-nome').value.trim();
+        const id = document.getElementById('reg-id').value.trim();
+        
+        if (!nome || !id) return alert("Preencha o Nome e a Matrícula!");
+
+        const hash = btoa(nome + id).substring(0, 10);
+        
+        // Verifica se já existe
+        if (db_alunos.find(a => a.hash === hash)) {
+            return alert("Este aluno já está cadastrado!");
+        }
+
+        const aluno = { nome, id, hash };
+        db_alunos.push(aluno);
+        localStorage.setItem('escola_alunos', JSON.stringify(db_alunos));
+
+        // Mostrar QR Code na tela
+        const qrDisplay = document.getElementById('qrcode-display');
+        qrDisplay.style.display = 'flex';
+        document.getElementById('canvas-qr').innerHTML = "";
+        new QRCode(document.getElementById("canvas-qr"), { text: hash, width: 160, height: 160 });
+        document.getElementById('qr-info').innerText = `${nome} (ID: ${id})`;
+        
+        // Limpar campos
+        document.getElementById('reg-nome').value = "";
+        document.getElementById('reg-id').value = "";
+        
+        // Atualizar a lista
+        renderizarListaAlunos();
+    }
+
+    function fecharQR() { 
+        document.getElementById('qrcode-display').style.display = 'none'; 
+    }
+
+    function renderizarListaAlunos() {
+        const listaDiv = document.getElementById('lista-alunos');
+        document.getElementById('contador-alunos').innerText = `Total: ${db_alunos.length} alunos cadastrados`;
+        
+        if (db_alunos.length === 0) {
+            listaDiv.innerHTML = '<div style="padding: 15px; text-align: center; color: #666;">Nenhum aluno cadastrado ainda.</div>';
+            return;
+        }
+
+        listaDiv.innerHTML = db_alunos.map(a => `
+            <div class="user-item">
+                <div class="user-info">
+                    <span class="user-name">${a.nome}</span>
+                    <span class="user-id">Matrícula: ${a.id}</span>
+                </div>
+                <span class="user-hash">#${a.hash}</span>
+            </div>
+        `).join('');
+    }
+
+    // ==========================================
+    // ABA: SCANNER
+    // ==========================================
+
+    function ligarCamera() {
+        if (!document.getElementById('reader')) return;
+        scanner = new Html5Qrcode("reader");
+        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
+            (decodedText) => { processarEntrada(decodedText); }
+        ).catch((err) => {
+            console.log("Câmera não iniciada ou permissão negada.", err);
+        });
+    }
+
+    function desligarCamera() { 
+        if(scanner) {
+            scanner.stop().catch(() => {}); 
+        }
+    }
+
+    function processarEntrada(hash) {
+        const aluno = db_alunos.find(a => a.hash === hash);
+        const hoje = new Date().toLocaleDateString();
+        const hora = new Date().toLocaleTimeString();
+        const msg = document.getElementById('scan-msg');
+
+        if (!aluno) {
+            msg.innerText = "❌ ALUNO NÃO ENCONTRADO/NÃO CADASTRADO!";
+            msg.style.color = "red";
+            return;
+        }
+
+        // Verifica se já comeu hoje
+        const jaComeu = db_logs.find(l => l.hash === hash && l.data === hoje);
+        
+        if (jaComeu) {
+            msg.innerText = `⚠️ ${aluno.nome.toUpperCase()} JÁ REALIZOU CHECK-IN HOJE.`;
+            msg.style.color = "#f57c00"; // Laranja
+        } else {
+            // Registra no banco de logs
+            db_logs.push({ nome: aluno.nome, id: aluno.id, hash, data: hoje, hora: hora });
+            localStorage.setItem('escola_logs', JSON.stringify(db_logs));
+            
+            msg.innerText = `✅ BEM-VINDO(A), ${aluno.nome.toUpperCase()}!`;
+            msg.style.color = "green";
+            
+            // Feedback tátil no celular
+            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+        
+        // Limpa a mensagem após 4 segundos
+        setTimeout(() => { if(msg.innerText.includes(aluno.nome.toUpperCase())) msg.innerText = ""; }, 4000);
+    }
+
+    // ==========================================
+    // ABA: DADOS E PREVISÃO
+    // ==========================================
+
+    function calcularPrevisao() {
+        const contagemPorDia = {};
+        // Agrupa logs por data
+        db_logs.forEach(l => contagemPorDia[l.data] = (contagemPorDia[l.data] || 0) + 1);
+        
+        const labels = Object.keys(contagemPorDia).slice(-7); // Últimos 7 dias registrados
+        const valores = labels.map(l => contagemPorDia[l]);
+        
+        renderGrafico(labels, valores);
+
+        const resultDiv = document.getElementById('previsao-resultado');
+
+        if (valores.length === 0) {
+            resultDiv.innerText = "Dados insuficientes para calcular a previsão. Aguarde o registro de refeições.";
+            return;
+        }
+
+        // Cálculo de Média
+        const media = valores.reduce((a, b) => a + b, 0) / valores.length;
+        
+        // Cálculo do Desvio Padrão (Física/Economia aplicada para variabilidade)
+        const variancia = valores.reduce((a, b) => a + Math.pow(b - media, 2), 0) / valores.length;
+        const desvio = Math.sqrt(variancia);
+
+        // Recomendação: Média + 1 Desvio Padrão (Margem de segurança para cobrir ~84% das flutuações)
+        const recomendacao = Math.ceil(media + desvio);
+
+        resultDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span><strong>Média Histórica:</strong></span> 
+                <span>${media.toFixed(1)} refeições/dia</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span><strong>Variabilidade (σ):</strong></span> 
+                <span>± ${desvio.toFixed(1)}</span>
+            </div>
+            <div style="background: #c8e6c9; padding: 10px; border-radius: 5px; text-align: center;">
+                <span style="font-size: 12px; display: block; color: #2e7d32;">META SEGURA DE PREPARO (Média + σ)</span>
+                <strong style="font-size: 20px; color: #1b5e20;">${recomendacao} refeições</strong>
+            </div>
+        `;
+        
+        // Atualiza a simulação caso já tenha valor digitado
+        simularDesperdicio(media);
+    }
+
+    function simularDesperdicio(mediaForcada = null) {
+        const produzido = parseInt(document.getElementById('input-produzido').value);
+        const resultDiv = document.getElementById('resultado-simulacao');
+        
+        if (isNaN(produzido) || produzido <= 0) {
+            resultDiv.innerText = "Aguardando valor válido...";
+            resultDiv.className = "alert-waste";
+            return;
+        }
+
+        let media;
+        if (mediaForcada !== null) {
+            media = mediaForcada;
+        } else {
+            const contagemPorDia = {};
+            db_logs.forEach(l => contagemPorDia[l.data] = (contagemPorDia[l.data] || 0) + 1);
+            const medias = Object.values(contagemPorDia);
+            media = medias.length ? medias.reduce((a,b)=>a+b)/medias.length : 0;
+        }
+
+        if (media === 0) {
+             resultDiv.innerText = "Sem dados históricos para simular.";
+             return;
+        }
+
+        if (produzido > media) {
+            const sobra = produzido - media;
+            resultDiv.innerText = `⚠️ Risco de Desperdício: Sobra estimada de ~${Math.round(sobra)} refeições (baseado na média).`;
+            resultDiv.className = "alert-waste";
+        } else {
+            const falta = media - produzido;
+            resultDiv.innerText = `✅ Sem desperdício estimado. (Risco de faltar ~${Math.round(falta)} refeições se a demanda for média).`;
+            resultDiv.className = "success-waste";
+        }
+    }
+
+    function renderGrafico(labels, valores) {
+        const ctx = document.getElementById('graficoFrequencia').getContext('2d');
+        
+        // Linha de média
+        const media = valores.length ? valores.reduce((a, b) => a + b, 0) / valores.length : 0;
+        const linhaMedia = new Array(labels.length).fill(media);
+
+        if (chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { 
+                        label: 'Refeições Consumidas', 
+                        data: valores, 
+                        backgroundColor: '#1b5e20',
+                        borderRadius: 4
+                    },
+                    { 
+                        label: 'Média de Consumo', 
+                        data: linhaMedia, 
+                        type: 'line', 
+                        borderColor: '#fbc02d', 
+                        borderWidth: 2, 
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    function exportarCSVLogs() {
+        if (db_logs.length === 0) return alert("Não há registros para exportar.");
+        
+        let csv = "Nome,Matricula,Data,Hora\n" + db_logs.map(l => `${l.nome},${l.id},${l.data},${l.hora}`).join("\n");
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'relatorio_frequencia_refeitorio.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function limparTudo() {
+        const msg = "⚠️ ATENÇÃO: Isso apagará TODOS os alunos cadastrados e todo o histórico de refeições do seu navegador.\n\nTem certeza absoluta?";
+        if(confirm(msg)) {
+            localStorage.removeItem('escola_alunos');
+            localStorage.removeItem('escola_logs');
+            db_alunos = [];
+            db_logs = [];
+            alert("Sistema resetado com sucesso.");
+            location.reload();
+        }
+    }
+</script>
+</body>
+</html>
