@@ -10,11 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
-         /* --- PALETA DE CORES BASEADA NAS LOGOS --- */
+        /* --- PALETA DE CORES BASEADA NAS LOGOS --- */
         :root { 
             --primary-blue: #1565C0; 
             --primary-light: #E3F2FD;
@@ -228,18 +225,9 @@
             .nav-btn .icon { font-size: 24px; }
             .nav-btn .text { font-size: 12px; }
         }
-
-        /* Status da Conexão */
-        #cloud-status {
-            text-align: center; font-size: 12px; padding: 5px; 
-            background: var(--warning); color: white; font-weight: bold;
-        }
-        #cloud-status.online { background: var(--success); }
     </style>
 </head>
 <body>
-
-<div id="cloud-status">Conectando à Nuvem...</div>
 
 <header>
     <img src="logos_ESEDRAT.png" alt="ESEDRAT" class="logo-img" onerror="this.style.display='none'">
@@ -302,17 +290,19 @@
 
         <div class="card">
             <h2 class="card-title">Impressão de Crachás</h2>
+            <p style="font-size: 14px; color: var(--text-muted);">Gere os crachás otimizados com logotipo e QR Code para todos os alunos cadastrados.</p>
             <button class="btn btn-print" onclick="gerarJanelaImpressao()">🖨️ Imprimir Todos os Crachás</button>
         </div>
 
         <div class="card">
-            <h2 class="card-title">Importar Excel/CSV</h2>
+            <h2 class="card-title">Banco de Dados (Planilha)</h2>
+            <p style="font-size: 14px; color: var(--text-muted);">Formatos suportados: <b>.xlsx</b> ou <b>.csv</b><br>Colunas exigidas: <code>Nome | Matricula | Segmento</code></p>
             <input type="file" id="csvFile" accept=".csv, .xlsx" style="background: white;">
-            <button class="btn btn-secondary" onclick="importarArquivo()">📥 Subir para a Nuvem</button>
+            <button class="btn btn-secondary" onclick="importarArquivo()">📥 Importar Lista</button>
         </div>
 
         <div class="card">
-            <h2 class="card-title">Lista na Nuvem <span id="contador-alunos" style="float: right; font-size: 14px; background: var(--primary-light); padding: 5px 10px; border-radius: 20px; color: var(--primary-blue); font-weight: bold;">0</span></h2>
+            <h2 class="card-title">Lista de Cadastrados <span id="contador-alunos" style="float: right; font-size: 14px; background: var(--primary-light); padding: 5px 10px; border-radius: 20px; color: var(--primary-blue); font-weight: bold;">0</span></h2>
             <div class="student-list" id="lista-alunos-ui"></div>
         </div>
     </div>
@@ -320,125 +310,115 @@
     <div id="dados" class="section">
         <div class="card">
             <h2 class="card-title">Inteligência da Cantina</h2>
-            <div class="info-box info-blue" id="previsao-resultado">Calculando...</div>
-            <h3 style="font-size: 16px; margin-top: 25px;">Simulador de Preparo</h3>
-            <input type="number" id="input-produzido" placeholder="Refeições preparadas hoje" oninput="simularDesperdicio()">
+            <div class="info-box info-blue" id="previsao-resultado">
+                Carregando estimativas baseadas no histórico...
+            </div>
+            
+            <h3 style="font-size: 16px; margin-top: 25px;">Simulador de Preparo (Evite Desperdício)</h3>
+            <label style="font-size: 14px; font-weight: bold; color: var(--text-dark);">Quantas refeições foram preparadas hoje?</label>
+            <input type="number" id="input-produzido" placeholder="Ex: 350" oninput="simularDesperdicio()">
             <div id="resultado-simulacao" style="font-weight: bold; margin-top: 10px;"></div>
         </div>
+
         <div class="card">
-            <h2 class="card-title">Gráfico de Consumo</h2>
+            <h2 class="card-title">Gráfico de Consumo Recente</h2>
             <div style="height: 250px; width: 100%;"><canvas id="graficoFrequencia"></canvas></div>
         </div>
+
         <div class="card">
             <h2 class="card-title">Exportação e Manutenção</h2>
-            <button class="btn btn-secondary" onclick="exportarCSVLogs()" style="margin-bottom: 10px;">📥 Baixar Relatório (.csv)</button>
-            <button class="btn btn-secondary" onclick="exportarCSVAlunos()" style="margin-bottom: 20px;">📥 Baixar Alunos (.csv)</button>
-            <button class="btn btn-accent" onclick="limparTudo()">⚠️ Apagar Banco na Nuvem</button>
+            <button class="btn btn-secondary" onclick="exportarCSVLogs()" style="margin-bottom: 10px;">📥 Baixar Relatório de Frequência (.csv)</button>
+            <button class="btn btn-secondary" onclick="exportarCSVAlunos()" style="margin-bottom: 20px;">📥 Baixar Lista de Alunos (.csv)</button>
+            <button class="btn btn-accent" onclick="limparTudo()">⚠️ Resetar Sistema Completo</button>
         </div>
     </div>
+
 </div>
 
 <script>
-    // ==========================================
-    // ⚠️ ATENÇÃO: COLOQUE SUAS CHAVES AQUI ⚠️
-    // Substitua o bloco abaixo pelo do Firebase
-    // ==========================================
-    const firebaseConfig = {
-    apiKey: "AIzaSyBVgI8kTKn8jaOedymSyNYro5ayhSs5ppE",
-    authDomain: "refeitorio-inteligente.firebaseapp.com",
-    databaseURL: "https://refeitorio-inteligente-default-rtdb.firebaseio.com",
-    projectId: "refeitorio-inteligente",
-    storageBucket: "refeitorio-inteligente.firebasestorage.app",
-    messagingSenderId: "772822898828",
-    appId: "1:772822898828:web:107b4657fbd4cf977dc3a9",
-    measurementId: "G-R5QKN722TZ"
-    };
-    // ==========================================
-
-    // Inicializa o Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // Estado Global da Aplicação
-    let db_alunos = [];
-    let db_logs = [];
+    // --- ESTADO GLOBAL DA APLICAÇÃO ---
+    let db_alunos = JSON.parse(localStorage.getItem('escola_alunos')) || [];
+    let db_logs = JSON.parse(localStorage.getItem('escola_logs')) || [];
     let scanner = null;
     let chartInstance = null;
     let cameraIsStarting = false;
 
+    // Regras de Direito à Refeição
     const direitosRefeicao = {
         "Ensino Médio NEM": ["Lanche da Manhã", "Almoço"],
         "Ensino Médio EMTI": ["Lanche da Manhã", "Almoço", "Lanche da Tarde"],
         "Ensino Fundamental": ["Almoço"]
     };
 
-    // --- SINCRONIZAÇÃO EM TEMPO REAL COM A NUVEM ---
-    db.ref('alunos').on('value', (snapshot) => {
-        db_alunos = snapshot.val() || [];
-        renderizarListaAlunos();
-        mudarStatusNuvem(true);
-    });
+    // Inicialização segura
+    window.onload = () => { ligarCamera(); renderizarListaAlunos(); };
 
-    db.ref('logs').on('value', (snapshot) => {
-        db_logs = snapshot.val() || [];
-        if(document.getElementById('dados').classList.contains('active')) calcularPrevisao();
-    });
+    // Utilitários de Persistência
+    const salvarBDAlunos = () => localStorage.setItem('escola_alunos', JSON.stringify(db_alunos));
+    const salvarBDLogs = () => localStorage.setItem('escola_logs', JSON.stringify(db_logs));
 
-    // Conexão e Status
-    function mudarStatusNuvem(online) {
-        const div = document.getElementById('cloud-status');
-        if (online) {
-            div.innerText = "☁️ Conectado e Sincronizado em Tempo Real";
-            div.classList.add('online');
-            setTimeout(() => div.style.display = 'none', 3000);
-        }
-    }
-
-    window.onload = () => { ligarCamera(); };
-
-    // Funções de Escrita no Banco (Substituem o localStorage)
-    const salvarBDAlunos = () => db.ref('alunos').set(db_alunos);
-    const salvarBDLogs = () => db.ref('logs').set(db_logs);
-
-    // Utilitários
+    // Utilitário para remover acentos (Crucial para busca UX)
     const normalizarTexto = (texto) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    // --- NAVEGAÇÃO ---
+    // --- SISTEMA DE NAVEGAÇÃO ---
     function showSection(id, btnElement) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
+        
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-tab'));
         btnElement.classList.add('active-tab');
         
-        if (id === 'scan') ligarCamera(); else desligarCamera();
+        if (id === 'scan') {
+            ligarCamera();
+        } else {
+            desligarCamera();
+        }
+
         if (id === 'alunos') renderizarListaAlunos();
         if (id === 'dados') calcularPrevisao();
     }
 
-    // --- SCANNER ---
+    // --- MÓDULO SCANNER (Gerenciamento de Ciclo de Vida Seguro) ---
     function ligarCamera() {
         if (scanner || cameraIsStarting) return;
         cameraIsStarting = true;
+        
+        // Responsividade do Box do Scanner
         const boxSize = window.innerWidth < 500 ? 200 : 250;
+
         scanner = new Html5Qrcode("reader");
-        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: boxSize, height: boxSize } }, processarEntrada)
-        .then(() => cameraIsStarting = false)
-        .catch(() => {
+        scanner.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: boxSize, height: boxSize } }, 
+            processarEntrada
+        ).then(() => {
+            cameraIsStarting = false;
+        }).catch(err => {
             cameraIsStarting = false;
             document.getElementById('reader').innerHTML = '<div style="padding: 30px; text-align: center; color: var(--accent-red);">Câmera indisponível. Use a busca manual abaixo.</div>';
         });
     }
     
     function desligarCamera() { 
-        if(scanner && !cameraIsStarting) { scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(()=>{}); } 
+        if(scanner && !cameraIsStarting) { 
+            scanner.stop().then(() => {
+                scanner.clear();
+                scanner = null;
+            }).catch(console.error); 
+        } 
     }
 
+    // Feedback Visual com Timeout Seguro
     let timeoutMsg;
     function exibirFeedback(html, corFundo) {
         const msgBox = document.getElementById('scan-msg');
-        msgBox.innerHTML = html; msgBox.style.background = corFundo;
+        msgBox.innerHTML = html;
+        msgBox.style.background = corFundo;
         clearTimeout(timeoutMsg);
-        timeoutMsg = setTimeout(() => { msgBox.innerHTML = "Aguardando leitura..."; msgBox.style.background = "#f9f9f9"; }, 3500);
+        timeoutMsg = setTimeout(() => { 
+            msgBox.innerHTML = "Aguardando leitura do crachá..."; 
+            msgBox.style.background = "#f9f9f9";
+        }, 3500); // Reduzido para 3.5s para fluxo mais dinâmico
     }
 
     function processarEntrada(hashTexto) {
@@ -448,158 +428,355 @@
     }
 
     function registrarConsumo(aluno) {
-        const refeicao = document.getElementById('select-refeicao').value;
+        const refeicaoAtual = document.getElementById('select-refeicao').value;
         const hoje = new Date().toLocaleDateString();
         const hora = new Date().toLocaleTimeString();
 
-        if (!aluno) return feedbackErro(`❌ NÃO ENCONTRADO<br>Crachá inválido.`);
-        if (!direitosRefeicao[aluno.segmento]?.includes(refeicao)) return feedbackErro(`❌ SEM ACESSO<br><b>${aluno.nome}</b> não tem direito ao <b>${refeicao}</b>.`);
+        if (!aluno) {
+            exibirFeedback(`<span style="color: var(--accent-red); font-size: 24px;">❌ NÃO ENCONTRADO</span><br>Crachá inválido.`, "var(--accent-red-light)");
+            if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            return;
+        }
 
-        if (db_logs.find(l => l.id === aluno.id && l.data === hoje && l.refeicao === refeicao)) {
-            exibirFeedback(`<span style="color: var(--warning); font-size: 24px;">⚠️ ATENÇÃO</span><br><span style="font-size: 16px;"><b>${aluno.nome}</b> já pegou o <b>${refeicao}</b> hoje!</span>`, "#FFF9C4");
+        const temDireito = direitosRefeicao[aluno.segmento]?.includes(refeicaoAtual);
+        if (!temDireito) {
+            exibirFeedback(`<span style="color: var(--accent-red); font-size: 24px;">❌ SEM ACESSO</span><br>
+            <span style="font-size: 16px;"><b>${aluno.nome}</b> não tem direito ao <b>${refeicaoAtual}</b>.</span>`, "var(--accent-red-light)");
+            if(navigator.vibrate) navigator.vibrate([300]);
+            return;
+        }
+
+        const jaComeu = db_logs.find(l => l.id === aluno.id && l.data === hoje && l.refeicao === refeicaoAtual);
+        if (jaComeu) {
+            exibirFeedback(`<span style="color: var(--warning); font-size: 24px;">⚠️ ATENÇÃO</span><br>
+            <span style="font-size: 16px;"><b>${aluno.nome}</b> já pegou o <b>${refeicaoAtual}</b> hoje!</span>`, "#FFF9C4");
             if(navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
         } else {
-            db_logs.push({ nome: aluno.nome, id: aluno.id, segmento: aluno.segmento, hash: aluno.hash, data: hoje, hora, refeicao: refeicao });
-            salvarBDLogs(); // ENVIA PARA A NUVEM IMEDIATAMENTE
-            exibirFeedback(`<span style="color: var(--success); font-size: 24px;">✅ LIBERADO</span><br><span style="font-size: 20px;"><b>${aluno.nome}</b></span><br><span style="font-size: 14px; color: #555;">Bom apetite!</span>`, "#E8F5E9");
+            db_logs.push({ nome: aluno.nome, id: aluno.id, segmento: aluno.segmento, hash: aluno.hash, data: hoje, hora, refeicao: refeicaoAtual });
+            salvarBDLogs(); // Usando a função otimizada
+            exibirFeedback(`<span style="color: var(--success); font-size: 24px;">✅ LIBERADO</span><br>
+            <span style="font-size: 20px;"><b>${aluno.nome}</b></span><br>
+            <span style="font-size: 14px; color: #555;">Bom apetite!</span>`, "#E8F5E9");
             if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            document.getElementById('input-busca-manual').value = ""; document.getElementById('lista-busca-manual').innerHTML = "";
+            
+            // Limpa busca manual automaticamente
+            document.getElementById('input-busca-manual').value = "";
+            document.getElementById('lista-busca-manual').innerHTML = "";
         }
     }
-    
-    function feedbackErro(msg) {
-        exibirFeedback(`<span style="color: var(--accent-red); font-size: 20px;">${msg}</span>`, "var(--accent-red-light)");
-        if(navigator.vibrate) navigator.vibrate([300]);
-    }
 
-    // --- BUSCA MANUAL ---
+    // --- BUSCA MANUAL INTELIGENTE (Ignora Acentos e Maiúsculas) ---
     function buscarAlunoManual() {
-        const termo = normalizarTexto(document.getElementById('input-busca-manual').value);
+        const inputTexto = document.getElementById('input-busca-manual').value;
+        const termo = normalizarTexto(inputTexto);
         const listaDiv = document.getElementById('lista-busca-manual');
+        
         if (termo.length < 2) { listaDiv.innerHTML = ""; return; }
 
-        const resultados = db_alunos.filter(a => normalizarTexto(a.nome).includes(termo) || normalizarTexto(a.id).includes(termo)).slice(0, 5);
-        if(resultados.length === 0) return listaDiv.innerHTML = "<div style='padding:10px; color:red; text-align:center;'>Nenhum aluno.</div>";
+        const resultados = db_alunos.filter(a => 
+            normalizarTexto(a.nome).includes(termo) || normalizarTexto(a.id).includes(termo)
+        ).slice(0, 5);
+
+        if(resultados.length === 0) {
+            listaDiv.innerHTML = "<div style='padding:10px; color:var(--accent-red); text-align:center; font-weight:bold;'>Nenhum aluno encontrado.</div>";
+            return;
+        }
 
         listaDiv.innerHTML = resultados.map(a => `
             <div class="list-item">
-                <div class="list-item-info"><strong>${a.nome}</strong><span>ID: ${a.id} | ${a.segmento}</span></div>
+                <div class="list-item-info">
+                    <strong>${a.nome}</strong>
+                    <span>Matrícula: ${a.id} | ${a.segmento}</span>
+                </div>
                 <button class="btn-confirm" onclick='registrarConsumo(${JSON.stringify(a)})'>Registrar</button>
-            </div>`).join('');
+            </div>
+        `).join('');
     }
 
-    // --- ALUNOS ---
+    // --- MÓDULO DE ALUNOS ---
     function salvarNovoAluno() {
         const nome = document.getElementById('reg-nome').value.trim();
         const id = document.getElementById('reg-id').value.trim();
         const segmento = document.getElementById('reg-segmento').value;
 
-        if (!nome || !id || !segmento) return alert("Preencha tudo!");
-        if (db_alunos.find(a => a.id === id)) return alert("Matrícula já cadastrada!");
+        if (!nome || !id || !segmento) return alert("Preencha todos os campos e selecione a turma!");
+        if (db_alunos.find(a => a.id === id)) return alert("Uma matrícula com este ID já está cadastrada!");
         
         db_alunos.push({ nome, id, segmento, hash: id });
-        salvarBDAlunos(); // NUVEM
-        alert(`Salvo na nuvem!`);
-        document.getElementById('reg-nome').value = ""; document.getElementById('reg-id').value = "";
+        salvarBDAlunos();
+        
+        alert(`Aluno(a) ${nome} cadastrado(a) com sucesso!`);
+        document.getElementById('reg-nome').value = "";
+        document.getElementById('reg-id').value = "";
+        renderizarListaAlunos();
     }
 
     function renderizarListaAlunos() {
+        const div = document.getElementById('lista-alunos-ui');
         document.getElementById('contador-alunos').innerText = db_alunos.length;
-        const badges = {"Ensino Médio NEM": "badge-nem", "Ensino Médio EMTI": "badge-emti", "Ensino Fundamental": "badge-fund"};
-        document.getElementById('lista-alunos-ui').innerHTML = db_alunos.map(a => `
+        
+        const badgeClass = {
+            "Ensino Médio NEM": "badge-nem",
+            "Ensino Médio EMTI": "badge-emti",
+            "Ensino Fundamental": "badge-fund"
+        };
+
+        // Renderização eficiente com DocumentFragment (Evita reflows do DOM)
+        div.innerHTML = db_alunos.map(a => `
             <div class="student-row">
-                <div><div style="font-weight: bold;">${a.nome}</div><div style="font-size: 12px;">ID: ${a.id}</div><div class="badge ${badges[a.segmento]||''}">${a.segmento}</div></div>
-            </div>`).join('');
+                <div>
+                    <div style="font-weight: bold; font-size: 15px;">${a.nome}</div>
+                    <div style="font-size: 12px; color: #7f8c8d;">ID: ${a.id}</div>
+                    <div class="badge ${badgeClass[a.segmento] || ''}">${a.segmento}</div>
+                </div>
+            </div>
+        `).join('');
     }    
     
+    // --- IMPORTAÇÃO BLINDADA CONTRA ERROS ---
     function importarArquivo() {
         const file = document.getElementById('csvFile').files[0];
-        if (!file) return alert("Selecione um Excel/CSV.");
+        if (!file) return alert("Selecione um arquivo (.xlsx ou .csv) primeiro!");
+
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                const registros = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-                let add = 0, pul = 0; const ids = new Set(db_alunos.map(a => a.id));
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const registros = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                let adicionados = 0;
+                let pulados = 0;
+
+                // Mapeamento rápido de IDs existentes para evitar uso de .find no loop O(1) em vez de O(n)
+                const idsExistentes = new Set(db_alunos.map(a => a.id));
 
                 for (let i = 1; i < registros.length; i++) {
-                    if (registros[i][0] && registros[i][1] && registros[i][2]) {
-                        const nome = String(registros[i][0]).trim(), id = String(registros[i][1]).trim(), seg = String(registros[i][2]).trim();
-                        if (!ids.has(id)) { db_alunos.push({ nome, id, segmento: seg, hash: id }); ids.add(id); add++; } else pul++;
+                    const linha = registros[i];
+                    // Proteção contra células vazias que viram "undefined"
+                    const nomeRaw = linha[0];
+                    const idRaw = linha[1];
+                    const segmentoRaw = linha[2];
+
+                    if (nomeRaw && idRaw && segmentoRaw) {
+                        const nome = String(nomeRaw).trim();
+                        const id = String(idRaw).trim();
+                        const segmento = String(segmentoRaw).trim();
+
+                        if (!idsExistentes.has(id)) {
+                            db_alunos.push({ nome, id, segmento, hash: id });
+                            idsExistentes.add(id); // Adiciona ao Set para validação em tempo real
+                            adicionados++;
+                        } else {
+                            pulados++;
+                        }
                     }
                 }
-                salvarBDAlunos(); // SOBE PRA NUVEM
-                alert(`Importação para a Nuvem Concluída!\n✅ ${add} novos.\n⚠️ ${pul} ignorados.`);
+
+                salvarBDAlunos();
+                renderizarListaAlunos();
+                alert(`Importação Concluída com Sucesso!\n\n✅ ${adicionados} alunos adicionados.\n⚠️ ${pulados} já existiam (ignorados).`);
                 document.getElementById('csvFile').value = "";
-            } catch (error) { alert("Erro ao ler o arquivo."); }
+            } catch (error) {
+                alert("Erro ao ler o arquivo. Verifique se ele não está corrompido ou fora do padrão (Nome, Matrícula, Segmento).");
+                console.error(error);
+            }
         };
         reader.readAsArrayBuffer(file);
     }
 
     // --- IMPRESSÃO DE CRACHÁS ---
     function gerarJanelaImpressao() {
-        if (db_alunos.length === 0) return alert("Não há alunos.");
+        if (db_alunos.length === 0) return alert("Não há alunos cadastrados para imprimir.");
         const win = window.open('', '_blank');
-        let html = `<html><head><title>Impressão</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-        <style>
-            body { font-family: sans-serif; display: flex; flex-wrap: wrap; gap: 15px; padding: 20px; }
-            .cracha { width: 8.5cm; height: 5.5cm; border: 2px solid #1565C0; border-radius: 12px; padding: 10px; box-sizing: border-box; position: relative; overflow: hidden; page-break-inside: avoid; }
-            .cracha::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 15px; background: #1565C0; }
-            .logos { display: flex; justify-content: space-between; margin-top: 10px; } .logo-img { height: 35px; }
-            .info { margin-top: 5px; width: 60%; float: left; } .nome { font-weight: bold; font-size: 14px; text-transform: uppercase; margin-bottom: 6px; }
-            .matricula { font-size: 11px; color: #555; } .segmento { font-size: 10px; background: #E3F2FD; color: #1565C0; padding: 3px 6px; border-radius: 4px; display: inline-block; font-weight: bold; margin-top: 5px; }
-            .qr-container { position: absolute; bottom: 12px; right: 12px; border: 2px solid #D32F2F; padding: 2px; border-radius: 6px; }
-            @media print { .no-print { display: none; } }
-        </style></head><body>
-        <div class="no-print" style="width: 100%; text-align: center; margin-bottom: 20px;"><button onclick="window.print()" style="padding: 15px; font-weight: bold; background: #1565C0; color: white; cursor: pointer;">🖨️ IMPRIMIR</button></div>`;
+        
+        let html = `
+            <html>
+            <head>
+                <title>Impressão de Crachás ESEDRAT</title>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 20px; background: #fff; margin: 0; }
+                    .cracha { 
+                        width: 8.5cm; height: 5.5cm; 
+                        border: 2px solid #1565C0; 
+                        border-radius: 12px; 
+                        padding: 10px; 
+                        box-sizing: border-box; 
+                        position: relative;
+                        page-break-inside: avoid;
+                        background: #fff;
+                        overflow: hidden;
+                    }
+                    .cracha::before {
+                        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 15px; background: #1565C0;
+                    }
+                    .logos { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 5px; }
+                    .logo-img { height: 35px; object-fit: contain; }
+                    .info { margin-top: 5px; width: 60%; float: left; }
+                    .nome { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #000; line-height: 1.1; margin-bottom: 6px; }
+                    .matricula { font-size: 11px; color: #555; }
+                    .segmento { font-size: 10px; background: #E3F2FD; color: #1565C0; padding: 3px 6px; border-radius: 4px; display: inline-block; font-weight: bold; margin-top: 5px; border: 1px solid #BBDEFB;}
+                    .qr-container { position: absolute; bottom: 12px; right: 12px; border: 2px solid #D32F2F; padding: 2px; border-radius: 6px; background: #fff;}
+                    @media print { 
+                        body { padding: 0; gap: 10px; } 
+                        .no-print { display: none; } 
+                        .cracha { border-color: #000; page-break-inside: avoid; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="no-print" style="width: 100%; text-align: center; margin-bottom: 20px;">
+                    <button onclick="window.print()" style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: #1565C0; color: white; border: none; border-radius: 8px; cursor: pointer;">🖨️ IMPRIMIR CRACHÁS</button>
+                    <p style="color: #666;">Dica: Nas configurações de impressão, ative <b>"Gráficos de plano de fundo"</b>.</p>
+                </div>
+        `;
 
-        db_alunos.forEach((a, i) => {
-            html += `<div class="cracha"><div class="logos"><img src="logos_ESEDRAT.png" class="logo-img"><img src="logos_MG.png" class="logo-img"></div>
-            <div class="info"><div class="nome">${a.nome}</div><div class="matricula">ID: ${a.id}</div><div class="segmento">${a.segmento}</div></div>
-            <div class="qr-container" id="qr-${i}"></div></div>`;
+        db_alunos.forEach((a, index) => {
+            html += `
+                <div class="cracha">
+                    <div class="logos">
+                        <img src="logos_ESEDRAT.png" class="logo-img" onerror="this.style.display='none'">
+                        <img src="logos_MG.png" class="logo-img" onerror="this.style.display='none'">
+                    </div>
+                    <div class="info">
+                        <div class="nome">${a.nome}</div>
+                        <div class="matricula">ID: ${a.id}</div>
+                        <div class="segmento">${a.segmento}</div>
+                    </div>
+                    <div class="qr-container" id="qr-${index}"></div>
+                </div>
+            `;
         });
-        html += `<script>window.onload = function() { const alunos = ${JSON.stringify(db_alunos)}; alunos.forEach((a, i) => { new QRCode(document.getElementById("qr-"+i), { text: a.hash, width: 85, height: 85 }); }); }<\/script></body></html>`;
-        win.document.write(html); win.document.close();
+
+        html += `
+                <script>
+                    window.onload = function() {
+                        const alunos = ${JSON.stringify(db_alunos)};
+                        alunos.forEach((a, index) => {
+                            new QRCode(document.getElementById("qr-" + index), { text: a.hash, width: 85, height: 85, colorDark : "#000000", colorLight : "#ffffff" });
+                        });
+                    }
+                <\/script>
+            </body>
+            </html>
+        `;
+        
+        win.document.write(html);
+        win.document.close();
     }
 
-    // --- PAINEL E EXPORTAÇÃO ---
+    // --- PAINEL DE DADOS ---
     function calcularPrevisao() {
-        const cont = {}; db_logs.forEach(l => cont[l.data] = (cont[l.data] || 0) + 1);
-        const labels = Object.keys(cont).slice(-7), valores = labels.map(l => cont[l]);
+        const contagemPorDia = {};
+        db_logs.forEach(l => contagemPorDia[l.data] = (contagemPorDia[l.data] || 0) + 1);
+        const labels = Object.keys(contagemPorDia).slice(-7);
+        const valores = labels.map(l => contagemPorDia[l]);
         
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(document.getElementById('graficoFrequencia').getContext('2d'), { type: 'bar', data: { labels, datasets: [{ label: 'Refeições', data: valores, backgroundColor: '#1565C0' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+        renderGraficoGeral(labels, valores);
 
         const resultDiv = document.getElementById('previsao-resultado');
-        if (valores.length === 0) return resultDiv.innerHTML = "Sem histórico na nuvem.";
+        if (valores.length === 0) {
+            resultDiv.innerHTML = "<strong>Sem histórico:</strong> Comece a registrar para ver as estimativas.";
+            resultDiv.className = "info-box info-blue";
+            return;
+        }
         
         const media = valores.reduce((a,b)=>a+b, 0) / valores.length;
-        resultDiv.innerHTML = `Média: <strong>${media.toFixed(1)}/dia</strong><br><br><span style="font-size:18px; font-weight:bold; color:var(--primary-blue);">🥘 Sugestão: ${Math.ceil(media * 1.1)} refeições</span>`;
+        const sugerido = Math.ceil(media * 1.1); // Margem de segurança de 10%
+        
+        resultDiv.innerHTML = `
+            <div style="font-size: 14px; color: #555;">Média de consumo dos últimos dias: <strong>${media.toFixed(1)} refeições/dia</strong></div>
+            <div style="font-size: 18px; color: var(--primary-blue); font-weight: bold; margin-top: 5px;">
+                🥘 Sugestão para Produção: ${sugerido} refeições
+            </div>
+        `;
         simularDesperdicio();
+    }
+
+    function renderGraficoGeral(labels, dados) {
+        const ctx = document.getElementById('graficoFrequencia').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, { 
+            type: 'bar', 
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'Refeições', 
+                    data: dados, 
+                    backgroundColor: '#1565C0',
+                    borderRadius: 4
+                }] 
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } 
+            }
+        });
     }
 
     function simularDesperdicio() {
         const produzido = parseInt(document.getElementById('input-produzido').value);
-        if (isNaN(produzido) || produzido <= 0) return document.getElementById('resultado-simulacao').innerHTML = "";
+        const resultDiv = document.getElementById('resultado-simulacao');
         
-        const cont = Object.values(db_logs.reduce((acc, l) => { acc[l.data] = (acc[l.data]||0)+1; return acc; }, {}));
-        const media = cont.length ? cont.reduce((a,b)=>a+b,0)/cont.length : 0;
+        if (isNaN(produzido) || produzido <= 0) {
+            resultDiv.innerHTML = "";
+            return;
+        }
+
+        const contagem = Object.values(db_logs.reduce((acc, l) => { acc[l.data] = (acc[l.data]||0)+1; return acc; }, {}));
+        const media = contagem.length ? contagem.reduce((a,b)=>a+b,0)/contagem.length : 0;
+        
         if (media === 0) return;
 
-        if (produzido > media) document.getElementById('resultado-simulacao').innerHTML = `<div class="info-box info-red">⚠️ Risco de sobrar aprox. <b>${Math.round(produzido - media)} refeições</b>.</div>`;
-        else document.getElementById('resultado-simulacao').innerHTML = `<div class="info-box info-green">✅ Atenção: pode faltar cerca de <b>${Math.round(media - produzido)} refeições</b>.</div>`;
+        if (produzido > media) {
+            const sobra = Math.round(produzido - media);
+            resultDiv.innerHTML = `<div class="info-box info-red">⚠️ Risco de sobrar aprox. <b>${sobra} refeições</b> (baseado na média histórica).</div>`;
+        } else {
+            const falta = Math.round(media - produzido);
+            resultDiv.innerHTML = `<div class="info-box info-green">✅ Produção sem sobras. Atenção: pode faltar cerca de <b>${falta} refeições</b> se a demanda atingir a média.</div>`;
+        }
     }
 
-    function baixar(c, n) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(["\ufeff" + c], {type: 'text/csv;charset=utf-8;'})); a.download = n; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
-    const fCSV = (v) => String(v).includes(',') ? `"${v}"` : v;
-    function exportarCSVLogs() { baixar("Data,Hora,Refeicao,Segmento,Matricula,Nome\n" + db_logs.map(l => `${l.data},${l.hora},${l.refeicao},${fCSV(l.segmento)},${l.id},${fCSV(l.nome)}`).join("\n"), 'Relatorio_Cantina.csv'); }
-    function exportarCSVAlunos() { baixar("Nome,Matricula,Segmento\n" + db_alunos.map(a => `${fCSV(a.nome)},${a.id},${fCSV(a.segmento)}`).join("\n"), 'Lista_Alunos.csv'); }
+    // --- EXPORTAÇÃO (Tratamento Anti-Quebra) ---
+    function formatarCSVValor(valor) {
+        // Envolve o valor em aspas duplas caso possua vírgulas, quebrando o erro do CSV
+        const texto = String(valor);
+        return texto.includes(',') ? `"${texto}"` : texto;
+    }
+
+    function baixarArquivo(conteudo, nomeArquivo) {
+        const blob = new Blob(["\ufeff" + conteudo], {type: 'text/csv;charset=utf-8;'});
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = nomeArquivo; 
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
+    }
+
+    function exportarCSVLogs() {
+        if (db_logs.length === 0) return alert("Sem registros de refeições.");
+        let csv = "Data,Hora,Refeicao,Segmento,Matricula,Nome\n" + 
+                  db_logs.map(l => `${l.data},${l.hora},${l.refeicao},${formatarCSVValor(l.segmento)},${l.id},${formatarCSVValor(l.nome)}`).join("\n");
+        baixarArquivo(csv, 'Relatorio_Cantina.csv');
+    }
+
+    function exportarCSVAlunos() {
+        if (db_alunos.length === 0) return alert("Sem alunos cadastrados.");
+        let csv = "Nome,Matricula,Segmento\n" + 
+                  db_alunos.map(a => `${formatarCSVValor(a.nome)},${a.id},${formatarCSVValor(a.segmento)}`).join("\n");
+        baixarArquivo(csv, 'Lista_Alunos.csv');
+    }
 
     function limparTudo() {
-        if(confirm("🛑 CUIDADO: Isso apagará TODOS os dados DA NUVEM (Todos os dispositivos perderão o acesso).\n\nTem certeza?")) {
-            db.ref('alunos').remove();
-            db.ref('logs').remove();
-            alert("Nuvem formatada com sucesso.");
+        if(confirm("🛑 CUIDADO: Isso apagará TODOS OS ALUNOS e HISTÓRICO.\n\nTem absoluta certeza?")) {
+            localStorage.clear();
+            alert("Sistema formatado com sucesso.");
+            location.reload();
         }
     }
 </script>
