@@ -631,7 +631,7 @@
     // Gerador de Nomes de Arquivo Dinâmicos
     const gerarNomeArquivo = (prefixo, extensao) => {
         const data = new Date().toISOString().split('T')[0]; // Formato: YYYY-MM-DD
-        return `${prefixo}_${data}.${extextensao}`;
+        return `${prefixo}_${data}.${extensao}`;
     };
 
     const normalizarTexto = (texto) => String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
