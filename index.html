@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refeitório Inteligente - ESEDRAT</title>
+
+<!-- BIBLIOTECAS -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script defer src="https://unpkg.com/html5-qrcode"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- Importa o arquivo css -->
+<link rel="stylesheet" type="text/css" href="style.css" />
+
+</head>
+
+<body>
+
+<header>
+    <img src="logos_ESEDRAT.png" class="logo-img" alt="ESEDRAT" onerror="this.style.display='none'">
+
+    <div class="header-center">
+        <h1>🍽️ Refeitório Inteligente - ESEDRAT</h1>
+        <p>Projeto Zero Desperdício • Gestão Inteligente da Alimentação Escolar</p>
+    </div>
+
+    <img src="logos_MG.png" class="logo-img" alt="MG" onerror="this.style.display='none'">
+</header>
+
+<nav>
+    <button class="nav-btn active" data-tab="scanner">
+        <span class="icon">📷</span><span class="text">LER CRACHÁ</span>
+    </button>
+
+    <button class="nav-btn" data-tab="students">
+        <span class="icon">👥</span><span class="text">ALUNOS</span>
+    </button>
+
+    <button class="nav-btn" data-tab="dashboard">
+        <span class="icon">📊</span><span class="text">PAINEL</span>
+    </button>
+</nav>
+
+<div class="container">
+
+    <!-- ========================================= -->
+    <!-- SCANNER -->
+    <!-- ========================================= -->
+
+    <section id="scanner" class="section active">
+
+        <div class="grid">
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Controle de Entrada
+                </h2>
+
+                <label>
+                    Refeição Atual
+                </label>
+
+                <select id="meal-select">
+                    <option value="Lanche da Manhã">
+                        ☕ Lanche da Manhã
+                    </option>
+
+                    <option value="Almoço" selected>
+                        🍛 Almoço
+                    </option>
+
+                    <option value="Lanche da Tarde">
+                        🥪 Lanche da Tarde
+                    </option>
+                </select>
+
+                <div id="reader-container">
+                    <div id="reader"></div>
+
+                    <div id="feedback" class="feedback">
+                        Aguardando leitura do QR Code...
+                    </div>
+                </div>
+
+                <!-- VALIDAÇÃO VISUAL -->
+
+                <div id="validation-area" class="validation-area">
+
+                    <div class="badge-preview">
+
+                        <div style="font-size:60px;">
+                            👤
+                        </div>
+
+                        <div id="preview-name" class="preview-name"></div>
+
+                        <div id="preview-id" class="preview-id"></div>
+
+                        <div id="preview-segment" class="preview-segment"></div>
+
+                    </div>
+
+                    <div class="validation-actions">
+
+                        <button class="btn btn-success" id="confirm-btn">
+                            ✅ Confirmar Entrada
+                        </button>
+
+                        <button class="btn btn-danger" id="cancel-btn">
+                            ❌ Cancelar
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- BUSCA MANUAL -->
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Busca Manual
+                </h2>
+
+                <p style="margin-bottom:12px; color:var(--muted);">
+                    Para alunos sem crachá.
+                </p>
+
+                <input
+                    type="text"
+                    id="manual-search"
+                    placeholder="Digite nome ou matrícula..."
+                >
+
+                <div id="manual-results"></div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ========================================= -->
+    <!-- ALUNOS -->
+    <!-- ========================================= -->
+
+    <section id="students" class="section">
+
+        <div class="grid">
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Cadastro Manual
+                </h2>
+
+                <input
+                    type="text"
+                    id="student-name"
+                    placeholder="Nome completo"
+                >
+
+                <input
+                    type="text"
+                    id="student-id"
+                    placeholder="Número de matrícula"
+                >
+
+                <select id="student-segment">
+
+                    <option value="">
+                        Selecione o segmento
+                    </option>
+
+                    <option value="Ensino Médio NEM">
+                        Ensino Médio NEM
+                    </option>
+
+                    <option value="Ensino Médio EMTI">
+                        Ensino Médio EMTI
+                    </option>
+
+                    <option value="Ensino Fundamental">
+                        Ensino Fundamental
+                    </option>
+
+                </select>
+
+                <button class="btn btn-primary" id="save-student-btn">
+                    ➕ Cadastrar Aluno
+                </button>
+
+            </div>
+
+            <!-- IMPORTAÇÃO -->
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Importação de Planilha
+                </h2>
+
+                <p style="margin-bottom:14px; color:var(--muted);">
+                    Formatos suportados: .xlsx e .csv
+                    <br>
+                    Colunas:
+                    Nome | Matrícula | Segmento
+                </p>
+
+                <input
+                    type="file"
+                    id="import-file"
+                    accept=".xlsx,.csv"
+                >
+
+                <button class="btn btn-dark" id="import-btn">
+                    📥 Importar Arquivo
+                </button>
+
+            </div>
+
+            <!-- LISTA -->
+
+            <div class="card">
+
+                <div
+                    style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        margin-bottom:20px;
+                        gap:10px;
+                        flex-wrap:wrap;
+                    "
+                >
+
+                    <h2 class="card-title" style="margin:0;">
+                        Banco de Dados
+                    </h2>
+
+                    <strong id="student-count">
+                        0 alunos
+                    </strong>
+
+                </div>
+
+                <div id="student-list" class="student-list"></div>
+
+                <br>
+
+                <button class="btn btn-warning" id="print-badges-btn">
+                    🖨️ Imprimir Crachás com QR Code
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ========================================= -->
+    <!-- DASHBOARD -->
+    <!-- ========================================= -->
+
+    <section id="dashboard" class="section">
+
+        <!-- CARDS -->
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <h3>Total de Alunos</h3>
+                <strong id="stat-students">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <h3>Consumos Hoje</h3>
+                <strong id="stat-today">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <h3>Total de Registros</h3>
+                <strong id="stat-logs">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <h3>Média Semanal</h3>
+                <strong id="stat-average">0</strong>
+            </div>
+
+        </div>
+
+        <!-- PREVISÃO -->
+
+        <div class="card">
+
+            <h2 class="card-title">
+                Inteligência de Produção
+            </h2>
+
+            <div id="forecast-box"></div>
+
+            <label>
+                Quantidade preparada hoje
+            </label>
+
+            <input
+                type="number"
+                id="prepared-input"
+                placeholder="Ex: 350"
+            >
+
+            <div id="waste-analysis"></div>
+
+        </div>
+
+        <!-- GRAFICO -->
+
+        <div class="card">
+
+            <h2 class="card-title">
+                Consumo dos Últimos 7 Dias
+            </h2>
+
+            <div class="chart-wrapper">
+                <canvas id="consumption-chart"></canvas>
+            </div>
+
+        </div>
+
+        <!-- EXPORTAÇÕES -->
+
+        <div class="card">
+
+            <h2 class="card-title">
+                Exportações e Backup
+            </h2>
+
+            <div class="flex">
+
+                <button class="btn btn-dark" id="export-logs-csv">
+                    📄 Acessos (CSV)
+                </button>
+
+                <button class="btn btn-success" id="export-logs-xlsx">
+                    📊 Acessos (Excel)
+                </button>
+
+            </div>
+
+            <br>
+
+            <div class="flex">
+
+                <button class="btn btn-dark" id="export-students-csv">
+                    📄 Alunos Cadastrados (CSV)
+                </button>
+
+                <button class="btn btn-success" id="export-students-xlsx">
+                    📊 Alunos Cadastrados (Excel)
+                </button>
+
+            </div>
+
+            <br>
+
+            <div class="flex">
+
+                <button class="btn btn-info" id="backup-btn">
+                    💾 Backup (JSON)
+                </button>
+
+                <button class="btn btn-danger" id="clear-btn">
+                    ⚠️ Limpar Sistema
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<!-- Importa o arquivo JavaScript -->
+<script type="text/javascript" src="script.js"></script>
+
+</body>
+</html>
