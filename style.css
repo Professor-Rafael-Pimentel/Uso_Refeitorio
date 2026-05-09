@@ -431,3 +431,12 @@ select:focus{
         width:100%;
     }
 }
+
+/* Responsividade */
+@media (max-width: 500px) {
+    .header-center h1 { font-size: 18px; }
+    .logo-img { height: 45px; }
+    .nav-btn .icon { font-size: 24px; }
+    .nav-btn .text { font-size: 12px; }
+    .flex { flex-direction: column; gap: 8px; }
+}
