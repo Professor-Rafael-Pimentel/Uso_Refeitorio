@@ -427,4 +427,22 @@ select:focus{
     .student-row button{
         width:100%;
     }
+
+    header{
+        flex-direction:column;
+        text-align:center;
+        padding:14px;
+    }
+
+    .logo-img{
+        height:42px;
+    }
+
+    .header-center h1{
+        font-size:20px;
+    }
+
+    .header-center p{
+        font-size:11px;
+    }
 }
