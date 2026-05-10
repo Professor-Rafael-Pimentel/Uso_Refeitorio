@@ -407,14 +407,6 @@ select:focus{
 
 @media(max-width:500px){
 
-    header{
-        flex-direction:column;
-    }
-
-    .logo-img{
-        height:50px;
-    }
-
     .validation-actions{
         flex-direction:column;
     }
