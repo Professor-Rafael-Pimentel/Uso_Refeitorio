@@ -1,1203 +1,396 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Refeitório Inteligente - ESEDRAT</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <style>
-        /* --- PALETA DE CORES BASEADA NAS LOGOS --- */
-        :root { 
-            --primary-blue: #1565C0; 
-            --primary-light: #E3F2FD;
-            --accent-red: #D32F2F;   
-            --accent-red-light: #FFEBEE;
-            --success: #2E7D32;
-            --warning: #F57F17;
-            --bg-page: #F4F7F6;
-            --surface: #FFFFFF;
-            --text-dark: #2C3E50;
-            --text-muted: #7F8C8D;
-            --border-radius: 16px;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refeitório Inteligente - ESEDRAT</title>
 
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: var(--bg-page); 
-            margin: 0; 
-            padding-bottom: 80px; 
-            color: var(--text-dark); 
-        }
-        
-        /* --- CABEÇALHO --- */
-        header { 
-            background: var(--primary-blue); 
-            color: white; 
-            padding: 15px 20px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
-            position: relative; 
-            z-index: 10; 
-        }
+<!-- BIBLIOTECAS -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script defer src="https://unpkg.com/html5-qrcode"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-        .logo-img { 
-            height: 60px; 
-            background: rgba(255, 255, 255, 0.95); 
-            padding: 5px; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
-            object-fit: contain; 
-        }
-        
-        .header-titles { 
-            text-align: center; 
-            flex-grow: 1; 
-            padding: 0 10px; 
-        }
+<!-- Importa o arquivo css -->
+<link rel="stylesheet" type="text/css" href="style.css" />
 
-        .header-titles h1 { 
-            margin: 0; 
-            font-size: 22px; 
-            font-weight: 700; 
-            letter-spacing: 0.5px; 
-        }
-
-        .header-titles span { 
-            font-size: 13px; 
-            opacity: 0.9; 
-            font-weight: 300; 
-        }
-
-        /* --- NAVEGAÇÃO PRINCIPAL --- */
-        nav { 
-            display: flex; 
-            background: var(--surface); 
-            position: sticky; top: 0; 
-            z-index: 100; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08); 
-        }
-
-        .nav-btn { 
-            flex: 1; 
-            padding: 15px 5px; 
-            border: none; 
-            background: transparent; 
-            color: var(--text-muted); 
-            cursor: pointer; 
-            transition: all 0.3s; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 6px; 
-            border-bottom: 4px solid transparent; 
-        }
-
-        .nav-btn .icon { 
-            font-size: 28px; 
-        }
-
-        .nav-btn .text { 
-            font-size: 14px; 
-            font-weight: 700; 
-        }
-
-        .nav-btn:hover, .nav-btn:focus { 
-            background: var(--primary-light); 
-            outline: none; 
-        }
-
-        .nav-btn.active-tab { 
-            color: var(--primary-blue); 
-            border-bottom: 4px solid var(--primary-blue); 
-            background: var(--primary-light); 
-        }
-
-        /* --- CONTAINERS E CARDS --- */
-        .container { 
-            width: 95%; 
-            max-width: 700px; 
-            margin: 25px auto; 
-        }
-
-        .section { 
-            display: none; 
-            animation: fadeIn 0.4s ease; 
-        }
-
-        .section.active { 
-            display: block; 
-        }
-        
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
-
-        .card { 
-            background: var(--surface); 
-            padding: 25px; 
-            border-radius: var(--border-radius); 
-            box-shadow: 0 6px 16px rgba(0,0,0,0.06); 
-            margin-bottom: 25px; 
-        }
-
-        .card-title { 
-            margin-top: 0; 
-            font-size: 18px; 
-            color: var(--primary-blue); 
-            border-bottom: 2px solid var(--primary-light); 
-            padding-bottom: 10px; margin-bottom: 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-        }
-
-        /* --- FORMULÁRIOS E BOTÕES --- */
-        input, select { 
-            width: 100%; 
-            padding: 14px; 
-            margin: 8px 0 16px 0; 
-            border-radius: 10px; 
-            border: 1px solid #D5DBDB; 
-            box-sizing: border-box; 
-            font-size: 16px; 
-            background-color: #F8F9F9; 
-            transition: 0.3s; 
-        }
-
-        input:focus, select:focus { 
-            border-color: var(--primary-blue); 
-            outline: none; 
-            box-shadow: 0 0 0 3px var(--primary-light); 
-        }
-
-        select { 
-            font-weight: 600; 
-            color: var(--text-dark); 
-            cursor: pointer; 
-        }
-
-        .btn { 
-            width: 100%; 
-            padding: 16px; 
-            border-radius: 10px; 
-            border: none; 
-            font-weight: bold; 
-            font-size: 16px; 
-            cursor: pointer; 
-            transition: transform 0.1s, box-shadow 0.2s; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; 
-        }
-
-        .btn:active { 
-            transform: scale(0.98); 
-        }
-
-        .btn-primary { 
-            background: var(--primary-blue); 
-            color: white; 
-            box-shadow: 0 4px 10px rgba(21, 101, 192, 0.3); 
-        }
-
-        .btn-secondary { 
-            background: var(--text-dark); 
-            color: white; 
-        }
-
-        .btn-accent { 
-            background: var(--accent-red); 
-            color: white; 
-            box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3); 
-        }
-
-        .btn-print { 
-            background: #FFC107; 
-            color: #333; 
-            box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3); 
-        }
-
-        .btn-success { 
-            background: var(--success); 
-            color: white; 
-            box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3); 
-        }
-
-        .btn-cancel { 
-            background: #95A5A6; 
-            color: white; 
-        }
-
-        .btn-excel { 
-            background: #1D6F42; 
-            color: white; 
-        }
-        
-        /* Cor para o botão de Backup */
-        .btn-info { 
-            background: #0288D1; 
-            color: white; 
-        } 
-
-        /* --- SCANNER E FEEDBACK --- */
-        #reader { 
-            width: 100%; 
-            border-radius: 12px; 
-            overflow: hidden; 
-            border: 3px solid var(--text-dark); 
-            background: #000; 
-        }
-
-        .feedback-box { 
-            text-align: center; 
-            margin-top: 20px; 
-            padding: 15px; 
-            border-radius: 12px; 
-            min-height: 70px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            font-size: 18px; 
-            font-weight: bold; 
-            background: #f9f9f9; 
-            transition: background 0.3s ease; 
-        }
-
-        /* --- VALIDAÇÃO VISUAL (CRACHÁ NA TELA) --- */
-        .validacao-container { 
-            display: none; 
-            margin-top: 15px; 
-        }
-
-        .badge-preview { 
-            border: 2px solid var(--primary-blue); 
-            border-radius: 12px; 
-            padding: 20px 15px; 
-            text-align: center; 
-            margin: 15px 0; 
-            background: #fff; 
-            position: relative; 
-            overflow: hidden; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-        }
-
-        .badge-preview::before { 
-            content: ''; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 12px; 
-            background: var(--primary-blue); 
-        }
-
-        .val-nome { 
-            font-size: 20px; 
-            font-weight: bold; 
-            color: var(--text-dark); 
-            margin: 10px 0 5px 0; 
-            text-transform: uppercase;
-        }
-
-        .val-id { 
-            font-size: 14px; 
-            color: var(--text-muted); 
-            margin-bottom: 15px; 
-        }
-
-        .validation-actions { 
-            display: flex; 
-            gap: 10px; 
-            margin-top: 15px; 
-        }
-
-        /* --- BUSCA MANUAL --- */
-        .manual-search-container { 
-            background: var(--primary-light); 
-            padding: 20px; 
-            border-radius: 12px; 
-            margin-top: 20px; 
-            border-left: 5px solid var(--primary-blue); 
-        }
-
-        .list-group { 
-            margin-top: 10px; 
-        }
-
-        .list-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 12px 15px; 
-            background: white; 
-            border-radius: 8px; 
-            margin-bottom: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-        }
-
-        .list-item-info strong { 
-            display: block; 
-            font-size: 15px; 
-            color: var(--primary-blue);
-         }
-
-        .list-item-info span { 
-            font-size: 12px; 
-            color: var(--text-muted); 
-        }
-
-        .btn-confirm { 
-            background: var(--primary-blue); 
-            color: white; 
-            border: none; 
-            padding: 10px 15px;
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: 0.2s; 
-            }
-
-        .btn-confirm:hover { 
-            background: #0D47A1; 
-        }
-
-        /* --- LISTA DE ALUNOS --- */
-        .student-list { 
-            max-height: 400px; 
-            overflow-y: auto; 
-            border: 1px solid #eee; 
-            border-radius: 10px; 
-        }
-
-        .student-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 15px; 
-            border-bottom: 1px solid #eee; 
-            align-items: center; 
-        }
-
-        .student-row:nth-child(even) { 
-            background-color: #fafafa; 
-        }
-
-        .badge { 
-            display: inline-block; 
-            padding: 4px 8px; 
-            border-radius: 6px; 
-            font-size: 11px; 
-            font-weight: bold; 
-            margin-top: 5px;
-        }
-
-        .badge-nem { 
-            background: #E8F5E9; 
-            color: #2E7D32; 
-        }
-
-        .badge-emti { 
-            background: #FFF3E0; 
-            color: #E65100; 
-        }
-
-        .badge-fund { 
-            background: #E3F2FD; 
-            color: #1565C0; 
-        }
-
-        /* --- DASHBOARD --- */
-        .info-box { 
-            padding: 15px; 
-            border-radius: 10px; 
-            margin-bottom: 15px; 
-            line-height: 1.4; 
-        }
-
-        .info-blue { 
-            background: var(--primary-light); 
-            border-left: 4px solid var(--primary-blue);
-        }
-
-        .info-red { 
-            background: var(--accent-red-light); 
-            border-left: 4px solid var(--accent-red); 
-        }
-
-        .info-green { 
-            background: #E8F5E9; 
-            border-left: 4px solid var(--success);
-         }
-
-        .export-group { 
-            display: flex; 
-            gap: 10px; 
-            margin-bottom: 15px;
-         }
-         
-        .empty-state { 
-            text-align: center; 
-            padding: 30px; 
-            color: var(--text-muted); 
-            font-style: italic; 
-        }
-
-        /* Responsividade */
-        @media (max-width: 500px) {
-            .header-titles h1 { font-size: 18px; }
-            .logo-img { height: 45px; }
-            .nav-btn .icon { font-size: 24px; }
-            .nav-btn .text { font-size: 12px; }
-            .export-group { flex-direction: column; gap: 8px; }
-        }
-    </style>
 </head>
+
 <body>
 
 <header>
-    <img src="logos_ESEDRAT.png" alt="ESEDRAT" class="logo-img" onerror="this.style.display='none'">
-    <div class="header-titles">
-        <h1>Refeitório Inteligente</h1>
-        <span>Acesso e Gestão Rápida</span>
+    <img src="logos_ESEDRAT.png" class="logo-img" alt="ESEDRAT" onerror="this.style.display='none'">
+
+    <div class="header-center">
+        <h1>🍽️ Refeitório Inteligente - ESEDRAT</h1>
+        <p>Projeto Zero Desperdício • Gestão Inteligente da Alimentação Escolar</p>
     </div>
-    <img src="logos_MG.png" alt="Governo MG" class="logo-img" onerror="this.style.display='none'">
+
+    <img src="logos_MG.png" class="logo-img" alt="MG" onerror="this.style.display='none'">
 </header>
 
 <nav>
-    <button id="tab-scan" class="nav-btn active-tab" onclick="showSection('scan', this)">
+    <button class="nav-btn active" data-tab="scanner">
         <span class="icon">📷</span><span class="text">LER CRACHÁ</span>
     </button>
-    <button id="tab-alunos" class="nav-btn" onclick="showSection('alunos', this)">
+
+    <button class="nav-btn" data-tab="students">
         <span class="icon">👥</span><span class="text">ALUNOS</span>
     </button>
-    <button id="tab-dados" class="nav-btn" onclick="showSection('dados', this)">
+
+    <button class="nav-btn" data-tab="dashboard">
         <span class="icon">📊</span><span class="text">PAINEL</span>
     </button>
 </nav>
 
 <div class="container">
-    
-    <div id="scan" class="section active">
-        <div class="card">
-            <h2 class="card-title">Controle de Entrada</h2>
-            <label style="font-weight: bold; color: var(--text-muted); font-size: 14px;">Qual refeição está sendo servida agora?</label>
-            <select id="select-refeicao">
-                <option value="Lanche da Manhã">☕ Lanche da Manhã</option>
-                <option value="Almoço" selected>🍛 Almoço</option>
-                <option value="Lanche da Tarde">🥪 Lanche da Tarde</option>
-            </select>
-            
-            <div id="reader-container">
-                <div id="reader"></div>
-                <div id="scan-msg" class="feedback-box">Aguardando leitura do crachá...</div>
+
+    <!-- ========================================= -->
+    <!-- SCANNER -->
+    <!-- ========================================= -->
+
+    <section id="scanner" class="section active">
+
+        <div class="grid">
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Controle de Entrada
+                </h2>
+
+                <label>
+                    Refeição Atual
+                </label>
+
+                <select id="meal-select">
+                    <option value="Lanche da Manhã">
+                        ☕ Lanche da Manhã
+                    </option>
+
+                    <option value="Almoço" selected>
+                        🍛 Almoço
+                    </option>
+
+                    <option value="Lanche da Tarde">
+                        🥪 Lanche da Tarde
+                    </option>
+                </select>
+
+                <div id="reader-container">
+                    <div id="reader"></div>
+
+                    <div id="feedback" class="feedback">
+                        Aguardando leitura do QR Code...
+                    </div>
+                </div>
+
+                <!-- VALIDAÇÃO VISUAL -->
+
+                <div id="validation-area" class="validation-area">
+
+                    <div class="badge-preview">
+
+                        <div style="font-size:60px;">
+                            👤
+                        </div>
+
+                        <div id="preview-name" class="preview-name"></div>
+
+                        <div id="preview-id" class="preview-id"></div>
+
+                        <div id="preview-segment" class="preview-segment"></div>
+
+                    </div>
+
+                    <div class="validation-actions">
+
+                        <button class="btn btn-success" id="confirm-btn">
+                            ✅ Confirmar Entrada
+                        </button>
+
+                        <button class="btn btn-danger" id="cancel-btn">
+                            ❌ Cancelar
+                        </button>
+
+                    </div>
+
+                </div>
+
             </div>
 
-            <div id="validacao-ui" class="validacao-container">
-                <h3 style="text-align: center; color: var(--primary-blue); margin-top: 0;">Confirme a Identidade</h3>
-                <div class="badge-preview">
-                    <div style="font-size: 40px; margin-bottom: 5px;">👤</div>
-                    <div id="val-nome" class="val-nome"></div>
-                    <div id="val-id" class="val-id"></div>
-                    <div id="val-segmento" class="badge"></div>
-                </div>
-                <div class="validation-actions">
-                    <button class="btn btn-success" onclick="confirmarConsumo()"><span style="font-size:20px">✅</span> OK! Liberar</button>
-                    <button class="btn btn-cancel" onclick="cancelarValidacao()">❌ Cancelar</button>
-                </div>
+            <!-- BUSCA MANUAL -->
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Busca Manual
+                </h2>
+
+                <p style="margin-bottom:12px; color:var(--muted);">
+                    Para alunos sem crachá.
+                </p>
+
+                <input
+                    type="text"
+                    id="manual-search"
+                    placeholder="Digite nome ou matrícula..."
+                >
+
+                <div id="manual-results"></div>
+
             </div>
+
         </div>
 
-        <div class="manual-search-container" id="manual-search-area">
-            <h3 style="margin-top: 0; font-size: 16px; color: var(--primary-blue);">Aluno esqueceu o crachá?</h3>
-            <p style="font-size: 13px; color: var(--text-dark); margin-bottom: 10px;">Digite o nome ou matrícula (Ignora acentos):</p>
-            <input type="text" id="input-busca-manual" placeholder="🔍 Buscar aluno..." oninput="buscarAlunoManual()">
-            <div id="lista-busca-manual" class="list-group"></div>
-        </div>
-    </div>
+    </section>
 
-    <div id="alunos" class="section">
+    <!-- ========================================= -->
+    <!-- ALUNOS -->
+    <!-- ========================================= -->
+
+    <section id="students" class="section">
+
+        <div class="grid">
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Cadastro Manual
+                </h2>
+
+                <input
+                    type="text"
+                    id="student-name"
+                    placeholder="Nome completo"
+                >
+
+                <input
+                    type="text"
+                    id="student-id"
+                    placeholder="Número de matrícula"
+                >
+
+                <select id="student-segment">
+
+                    <option value="">
+                        Selecione o segmento
+                    </option>
+
+                    <option value="Ensino Médio NEM">
+                        Ensino Médio NEM
+                    </option>
+
+                    <option value="Ensino Médio EMTI">
+                        Ensino Médio EMTI
+                    </option>
+
+                    <option value="Ensino Fundamental">
+                        Ensino Fundamental
+                    </option>
+
+                </select>
+
+                <button class="btn btn-primary" id="save-student-btn">
+                    ➕ Cadastrar Aluno
+                </button>
+
+            </div>
+
+            <!-- IMPORTAÇÃO -->
+
+            <div class="card">
+
+                <h2 class="card-title">
+                    Importação de Planilha
+                </h2>
+
+                <p style="margin-bottom:14px; color:var(--muted);">
+                    Formatos suportados: .xlsx e .csv
+                    <br>
+                    Colunas:
+                    Nome | Matrícula | Segmento
+                </p>
+
+                <input
+                    type="file"
+                    id="import-file"
+                    accept=".xlsx,.csv"
+                >
+
+                <button class="btn btn-dark" id="import-btn">
+                    📥 Importar Arquivo
+                </button>
+
+            </div>
+
+            <!-- LISTA -->
+
+            <div class="card">
+
+                <div
+                    style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        margin-bottom:20px;
+                        gap:10px;
+                        flex-wrap:wrap;
+                    "
+                >
+
+                    <h2 class="card-title" style="margin:0;">
+                        Banco de Dados
+                    </h2>
+
+                    <strong id="student-count">
+                        0 alunos
+                    </strong>
+
+                </div>
+
+                <div id="student-list" class="student-list"></div>
+
+                <br>
+
+                <button class="btn btn-warning" id="print-badges-btn">
+                    🖨️ Imprimir Crachás com QR Code
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ========================================= -->
+    <!-- DASHBOARD -->
+    <!-- ========================================= -->
+
+    <section id="dashboard" class="section">
+
+        <!-- CARDS -->
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <h3>Total de Alunos</h3>
+                <strong id="stat-students">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <h3>Consumos Hoje</h3>
+                <strong id="stat-today">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <h3>Total de Registros</h3>
+                <strong id="stat-logs">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <h3>Média Semanal</h3>
+                <strong id="stat-average">0</strong>
+            </div>
+
+        </div>
+
+        <!-- PREVISÃO -->
+
         <div class="card">
-            <h2 class="card-title">Novo Aluno</h2>
-            <input type="text" id="reg-nome" placeholder="Nome Completo">
-            <input type="text" id="reg-id" placeholder="Número de Matrícula (ID Único)">
-            <select id="reg-segmento">
-                <option value="" disabled selected>Selecione a Turma / Segmento...</option>
-                <option value="Ensino Médio NEM">Ensino Médio NEM</option>
-                <option value="Ensino Médio EMTI">Ensino Médio EMTI</option>
-                <option value="Ensino Fundamental">Ensino Fundamental</option>
-            </select>
-            <button class="btn btn-primary" onclick="salvarNovoAluno()">➕ Cadastrar Aluno</button>
-        </div>
 
-        <div class="card">
-            <h2 class="card-title">Banco de Dados de Alunos</h2>
-            <p style="font-size: 14px; color: var(--text-muted);">Formatos suportados: <b>.xlsx</b> ou <b>.csv</b><br>Colunas exigidas na ordem: <code>Nome | Matricula | Segmento</code></p>
-            <input type="file" id="csvFile" accept=".csv, .xlsx" style="background: white;">
-            <button class="btn btn-secondary" onclick="importarArquivo()">📥 Importar Planilha de Alunos</button>
-        </div>
-
-        <div class="card">
             <h2 class="card-title">
-                Lista de Cadastrados 
-                <span id="contador-alunos" style="font-size: 14px; background: var(--primary-light); padding: 5px 10px; border-radius: 20px; color: var(--primary-blue); font-weight: bold;">0</span>
+                Inteligência de Produção
             </h2>
-            <div class="student-list" id="lista-alunos-ui"></div>
-            <button class="btn btn-print" style="margin-top: 15px;" onclick="gerarJanelaImpressao()">🖨️ Imprimir Crachás com QR Code</button>
-        </div>
-    </div>
 
-    <div id="dados" class="section">
-        <div class="card">
-            <h2 class="card-title">Inteligência da Cantina</h2>
-            <div class="info-box info-blue" id="previsao-resultado">
-                Carregando estimativas baseadas no histórico...
-            </div>
-            
-            <h3 style="font-size: 16px; margin-top: 25px;">Simulador de Preparo (Evite Desperdício)</h3>
-            <label style="font-size: 14px; font-weight: bold; color: var(--text-dark);">Quantas refeições foram preparadas hoje?</label>
-            <input type="number" id="input-produzido" placeholder="Ex: 350" oninput="simularDesperdicio()">
-            <div id="resultado-simulacao" style="font-weight: bold; margin-top: 10px;"></div>
+            <div id="forecast-box"></div>
+
+            <label>
+                Quantidade preparada hoje
+            </label>
+
+            <input
+                type="number"
+                id="prepared-input"
+                placeholder="Ex: 350"
+            >
+
+            <div id="waste-analysis"></div>
+
         </div>
 
-        <div class="card">
-            <h2 class="card-title">Gráfico de Consumo (Últimos 7 dias)</h2>
-            <div style="height: 250px; width: 100%;"><canvas id="graficoFrequencia"></canvas></div>
-        </div>
+        <!-- GRAFICO -->
 
         <div class="card">
-            <h2 class="card-title">Exportação e Segurança</h2>
-            
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px;">Relatório de Consumo Diário:</p>
-            <div class="export-group">
-                <button class="btn btn-secondary" style="flex:1;" onclick="exportarCSVLogs()">📄 Baixar CSV</button>
-                <button class="btn btn-excel" style="flex:1;" onclick="exportarXLSXLogs()">📊 Baixar Excel</button>
-            </div>
-            
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px; margin-top: 15px;">Cadastros de Alunos:</p>
-            <div class="export-group" style="margin-bottom: 25px;">
-                <button class="btn btn-secondary" style="flex:1;" onclick="exportarCSVAlunos()">📄 Baixar CSV</button>
-                <button class="btn btn-excel" style="flex:1;" onclick="exportarXLSXAlunos()">📊 Baixar Excel</button>
+
+            <h2 class="card-title">
+                Consumo dos Últimos 7 Dias
+            </h2>
+
+            <div class="chart-wrapper">
+                <canvas id="consumption-chart"></canvas>
             </div>
 
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Evite perder dados! Faça um backup completo que pode ser restaurado futuramente (Cópia de Segurança do Navegador).</p>
-            <button class="btn btn-info" style="margin-bottom: 15px;" onclick="baixarBackupJSON()">💾 Fazer Backup Completo do Sistema (JSON)</button>
-            
-            <button class="btn btn-accent" onclick="limparTudo()">⚠️ Formatar Sistema (Apagar Tudo)</button>
         </div>
-    </div>
+
+        <!-- EXPORTAÇÕES -->
+
+        <div class="card">
+
+            <h2 class="card-title">
+                Exportações e Backup
+            </h2>
+
+            <div class="flex">
+
+                <button class="btn btn-dark" id="export-logs-csv">
+                    📄 Acessos (CSV)
+                </button>
+
+                <button class="btn btn-success" id="export-logs-xlsx">
+                    📊 Acessos (Excel)
+                </button>
+
+            </div>
+
+            <br>
+
+            <div class="flex">
+
+                <button class="btn btn-dark" id="export-students-csv">
+                    📄 Alunos Cadastrados (CSV)
+                </button>
+
+                <button class="btn btn-success" id="export-students-xlsx">
+                    📊 Alunos Cadastrados (Excel)
+                </button>
+
+            </div>
+
+            <br>
+
+            <div class="flex">
+
+                <button class="btn btn-info" id="backup-btn">
+                    💾 Backup (JSON)
+                </button>
+
+                <button class="btn btn-danger" id="clear-btn">
+                    ⚠️ Limpar Sistema
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
 
 </div>
 
-<script>
-    // --- FUNÇÕES DE SEGURANÇA E HIGIENIZAÇÃO (Evita XSS) ---
-    function escapeHTML(str) {
-        if (!str) return "";
-        return String(str).replace(/[&<>'"]/g, tag => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-        }[tag]));
-    }
+<!-- Importa o arquivo JavaScript -->
+<script type="text/javascript" src="script.js"></script>
 
-    // --- ESTADO GLOBAL DA APLICAÇÃO ---
-    let db_alunos = JSON.parse(localStorage.getItem('escola_alunos')) || [];
-    let db_logs = JSON.parse(localStorage.getItem('escola_logs')) || [];
-    let scanner = null;
-    let chartInstance = null;
-    let cameraIsStarting = false;
-    let alunoEmValidacao = null;
-
-    // Regras de Direito à Refeição
-    const direitosRefeicao = {
-        "Ensino Médio NEM": ["Lanche da Manhã", "Almoço"],
-        "Ensino Médio EMTI": ["Lanche da Manhã", "Almoço", "Lanche da Tarde"],
-        "Ensino Fundamental": ["Almoço"]
-    };
-
-    // Inicialização segura
-    window.onload = () => { ligarCamera(); renderizarListaAlunos(); };
-
-    // Utilitários de Persistência
-    const salvarBDAlunos = () => localStorage.setItem('escola_alunos', JSON.stringify(db_alunos));
-    const salvarBDLogs = () => localStorage.setItem('escola_logs', JSON.stringify(db_logs));
-
-    // Gerador de Nomes de Arquivo Dinâmicos
-    const gerarNomeArquivo = (prefixo, extensao) => {
-        const data = new Date().toISOString().split('T')[0]; // Formato: YYYY-MM-DD
-        return `${prefixo}_${data}.${extensao}`;
-    };
-
-    const normalizarTexto = (texto) => String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-    // --- SISTEMA DE NAVEGAÇÃO ---
-    function showSection(id, btnElement) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-tab'));
-        btnElement.classList.add('active-tab');
-        
-        cancelarValidacao(); // Reseta qualquer validação pendente ao trocar de aba
-
-        if (id === 'scan') {
-            ligarCamera();
-        } else {
-            desligarCamera();
-        }
-
-        if (id === 'alunos') renderizarListaAlunos();
-        if (id === 'dados') calcularPrevisao();
-    }
-
-    // --- MÓDULO SCANNER (Robusto contra Multi-Thread) ---
-    async function ligarCamera() {
-        if (scanner || cameraIsStarting) return;
-        cameraIsStarting = true;
-        
-        const boxSize = window.innerWidth < 500 ? 200 : 250;
-        
-        try {
-            scanner = new Html5Qrcode("reader");
-            await scanner.start(
-                { facingMode: "environment" }, 
-                { fps: 10, qrbox: { width: boxSize, height: boxSize } }, 
-                processarEntrada
-            );
-        } catch (err) {
-            console.warn("Câmera não iniciada:", err);
-            document.getElementById('reader').innerHTML = '<div style="padding: 30px; text-align: center; color: var(--accent-red);">Câmera não detectada ou permissão negada.<br>Use a busca manual abaixo.</div>';
-            scanner = null;
-        } finally {
-            cameraIsStarting = false;
-        }
-    }
-    
-    async function desligarCamera() { 
-        if(scanner && !cameraIsStarting) { 
-            try {
-                await scanner.stop();
-                scanner.clear();
-            } catch(e) {
-                console.warn("Erro ao parar câmera:", e);
-            } finally {
-                scanner = null;
-            }
-        } 
-    }
-
-    // Feedback Visual
-    let timeoutMsg;
-    function exibirFeedback(html, corFundo) {
-        const msgBox = document.getElementById('scan-msg');
-        msgBox.innerHTML = html; // Seguro pois o HTML injetado aqui é estático ou sanitizado antes.
-        msgBox.style.background = corFundo;
-        clearTimeout(timeoutMsg);
-        timeoutMsg = setTimeout(() => { 
-            msgBox.innerHTML = "Aguardando leitura do crachá..."; 
-            msgBox.style.background = "#f9f9f9";
-        }, 3500);
-    }
-
-    // --- VALIDAÇÃO VISUAL ---
-    function processarEntrada(hashTexto) {
-        if (alunoEmValidacao != null) return; // Trava a leitura durante validação
-
-        const hashLimpo = escapeHTML(hashTexto.trim());
-        const aluno = db_alunos.find(a => a.hash === hashLimpo || a.id === hashLimpo);
-        
-        if (!aluno) {
-            exibirFeedback(`<span style="color: var(--accent-red); font-size: 24px;">❌ NÃO ENCONTRADO</span><br>Crachá inválido.`, "var(--accent-red-light)");
-            if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-            return;
-        }
-
-        abrirValidacaoModal(aluno);
-    }
-
-    function abrirValidacaoModal(aluno) {
-        alunoEmValidacao = aluno;
-        
-        // Uso de textContent / escapeHTML para proteção contra XSS
-        document.getElementById('val-nome').textContent = aluno.nome;
-        document.getElementById('val-id').textContent = "Matrícula: " + aluno.id;
-        document.getElementById('val-segmento').textContent = aluno.segmento;
-        
-        const badgeClass = { "Ensino Médio NEM": "badge-nem", "Ensino Médio EMTI": "badge-emti", "Ensino Fundamental": "badge-fund" };
-        document.getElementById('val-segmento').className = `badge ${badgeClass[aluno.segmento] || ''}`;
-
-        document.getElementById('reader-container').style.display = 'none';
-        document.getElementById('manual-search-area').style.display = 'none';
-        document.getElementById('validacao-ui').style.display = 'block';
-        
-        if(navigator.vibrate) navigator.vibrate([100]);
-    }
-
-    function cancelarValidacao() {
-        alunoEmValidacao = null;
-        document.getElementById('validacao-ui').style.display = 'none';
-        document.getElementById('reader-container').style.display = 'block';
-        document.getElementById('manual-search-area').style.display = 'block';
-    }
-
-    function confirmarConsumo() {
-        if (!alunoEmValidacao) return;
-        const aluno = alunoEmValidacao;
-        
-        cancelarValidacao();
-        
-        const refeicaoAtual = escapeHTML(document.getElementById('select-refeicao').value);
-        const hoje = new Date().toLocaleDateString('pt-BR');
-        const hora = new Date().toLocaleTimeString('pt-BR');
-
-        // Checagem segura de segmento
-        const temDireito = direitosRefeicao[aluno.segmento]?.includes(refeicaoAtual);
-        if (!temDireito) {
-            exibirFeedback(`<span style="color: var(--accent-red); font-size: 24px;">❌ SEM ACESSO</span><br>
-            <span style="font-size: 16px;"><b>${escapeHTML(aluno.nome)}</b> não tem direito ao <b>${refeicaoAtual}</b>.</span>`, "var(--accent-red-light)");
-            if(navigator.vibrate) navigator.vibrate([300]);
-            return;
-        }
-
-        const jaComeu = db_logs.find(l => l.id === aluno.id && l.data === hoje && l.refeicao === refeicaoAtual);
-        if (jaComeu) {
-            exibirFeedback(`<span style="color: var(--warning); font-size: 24px;">⚠️ ATENÇÃO</span><br>
-            <span style="font-size: 16px;"><b>${escapeHTML(aluno.nome)}</b> já pegou o <b>${refeicaoAtual}</b> hoje!</span>`, "#FFF9C4");
-            if(navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
-        } else {
-            db_logs.push({ nome: aluno.nome, id: aluno.id, segmento: aluno.segmento, hash: aluno.hash, data: hoje, hora, refeicao: refeicaoAtual });
-            salvarBDLogs();
-            exibirFeedback(`<span style="color: var(--success); font-size: 24px;">✅ LIBERADO</span><br>
-            <span style="font-size: 20px;"><b>${escapeHTML(aluno.nome)}</b></span><br>
-            <span style="font-size: 14px; color: #555;">Bom apetite!</span>`, "#E8F5E9");
-            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            
-            document.getElementById('input-busca-manual').value = "";
-            document.getElementById('lista-busca-manual').innerHTML = "";
-        }
-    }
-
-    // --- BUSCA MANUAL ---
-    function buscarAlunoManual() {
-        const inputTexto = document.getElementById('input-busca-manual').value;
-        const termo = normalizarTexto(inputTexto);
-        const listaDiv = document.getElementById('lista-busca-manual');
-        
-        if (termo.length < 2) { listaDiv.innerHTML = ""; return; }
-
-        const resultados = db_alunos.filter(a => 
-            normalizarTexto(a.nome).includes(termo) || normalizarTexto(a.id).includes(termo)
-        ).slice(0, 5);
-
-        if(resultados.length === 0) {
-            listaDiv.innerHTML = "<div class='empty-state' style='padding:10px; color:var(--accent-red);'>Nenhum aluno encontrado.</div>";
-            return;
-        }
-
-        // Construção segura com escapeHTML
-        listaDiv.innerHTML = resultados.map((a, index) => {
-            const safeObj = escapeHTML(JSON.stringify(a));
-            return `
-            <div class="list-item">
-                <div class="list-item-info">
-                    <strong>${escapeHTML(a.nome)}</strong>
-                    <span>Matrícula: ${escapeHTML(a.id)} | ${escapeHTML(a.segmento)}</span>
-                </div>
-                <button class="btn-confirm" onclick="abrirValidacaoModal(${safeObj.replace(/&quot;/g, "'")})">Visualizar</button>
-            </div>
-        `}).join('');
-    }
-
-    // --- MÓDULO DE ALUNOS ---
-    function salvarNovoAluno() {
-        const nome = document.getElementById('reg-nome').value.trim();
-        const id = document.getElementById('reg-id').value.trim();
-        const segmento = document.getElementById('reg-segmento').value;
-
-        if (nome.length < 3 || !id || !segmento) return alert("Preencha todos os campos corretamente!");
-        if (db_alunos.find(a => a.id === id)) return alert("Uma matrícula com este ID já está cadastrada!");
-        
-        // Sanitização na entrada
-        db_alunos.push({ 
-            nome: escapeHTML(nome), 
-            id: escapeHTML(id), 
-            segmento: escapeHTML(segmento), 
-            hash: escapeHTML(id) 
-        });
-        
-        salvarBDAlunos();
-        alert(`Aluno(a) cadastrado(a) com sucesso!`);
-        document.getElementById('reg-nome').value = "";
-        document.getElementById('reg-id').value = "";
-        renderizarListaAlunos();
-    }
-
-    function renderizarListaAlunos() {
-        const div = document.getElementById('lista-alunos-ui');
-        document.getElementById('contador-alunos').innerText = db_alunos.length;
-        
-        if(db_alunos.length === 0) {
-            div.innerHTML = "<div class='empty-state'>Nenhum aluno cadastrado no momento. Importe uma planilha ou cadastre manualmente.</div>";
-            return;
-        }
-
-        const badgeClass = { "Ensino Médio NEM": "badge-nem", "Ensino Médio EMTI": "badge-emti", "Ensino Fundamental": "badge-fund" };
-
-        // HTML 100% Escapado
-        div.innerHTML = db_alunos.map(a => `
-            <div class="student-row">
-                <div>
-                    <div style="font-weight: bold; font-size: 15px;">${escapeHTML(a.nome)}</div>
-                    <div style="font-size: 12px; color: #7f8c8d;">ID: ${escapeHTML(a.id)}</div>
-                    <div class="badge ${badgeClass[a.segmento] || ''}">${escapeHTML(a.segmento)}</div>
-                </div>
-            </div>
-        `).join('');
-    }    
-    
-    // --- IMPORTAÇÃO BLINDADA DO EXCEL ---
-    function importarArquivo() {
-        const file = document.getElementById('csvFile').files[0];
-        if (!file) return alert("Selecione um arquivo (.xlsx ou .csv) primeiro!");
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const registros = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                let adicionados = 0;
-                let pulados = 0;
-                const idsExistentes = new Set(db_alunos.map(a => String(a.id)));
-
-                // Começa do índice 1 para pular o cabeçalho
-                for (let i = 1; i < registros.length; i++) {
-                    const linha = registros[i];
-                    // Proteção contra dados vazios ou numéricos no Excel
-                    const nomeRaw = linha[0] ? String(linha[0]).trim() : "";
-                    const idRaw = linha[1] ? String(linha[1]).trim() : "";
-                    const segmentoRaw = linha[2] ? String(linha[2]).trim() : "";
-
-                    if (nomeRaw && idRaw && segmentoRaw) {
-                        const id = escapeHTML(idRaw);
-                        if (!idsExistentes.has(id)) {
-                            db_alunos.push({ 
-                                nome: escapeHTML(nomeRaw), 
-                                id: id, 
-                                segmento: escapeHTML(segmentoRaw), 
-                                hash: id 
-                            });
-                            idsExistentes.add(id);
-                            adicionados++;
-                        } else {
-                            pulados++;
-                        }
-                    }
-                }
-
-                salvarBDAlunos();
-                renderizarListaAlunos();
-                alert(`Importação Concluída!\n\n✅ ${adicionados} alunos adicionados.\n⚠️ ${pulados} ignorados (matrículas repetidas).`);
-                document.getElementById('csvFile').value = "";
-            } catch (error) {
-                alert("Erro ao ler o arquivo. Verifique se as colunas estão corretas (Nome, Matrícula, Segmento).");
-                console.error(error);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    // --- IMPRESSÃO DE CRACHÁS ---
-    function gerarJanelaImpressao() {
-        if (db_alunos.length === 0) return alert("Não há alunos para imprimir.");
-        const win = window.open('', '_blank');
-        
-        let html = `
-            <html>
-            <head>
-                <title>Crachás ESEDRAT</title>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-                <style>
-                    body { 
-                        font-family: 'Segoe UI', Arial, sans-serif; 
-                        display: flex; 
-                        flex-wrap: wrap; 
-                        justify-content: center; 
-                        gap: 15px; 
-                        padding: 20px; 
-                        background: #fff; 
-                        margin: 0; 
-                    }
-
-                    .cracha { 
-                        width: 8.5cm; 
-                        height: 5.5cm; 
-                        border: 2px solid #1565C0; 
-                        border-radius: 12px; 
-                        padding: 10px; 
-                        box-sizing: border-box; 
-                        position: relative; 
-                        page-break-inside: avoid; 
-                        background: #fff; 
-                        overflow: hidden; 
-                    }
-
-                    .cracha::before { 
-                        content: ''; 
-                        position: absolute; 
-                        top: 0; 
-                        left: 0; 
-                        width: 100%; 
-                        height: 15px; 
-                        background: #1565C0; 
-                    }
-
-                    .logos { 
-                        display: flex; 
-                        justify-content: space-between; 
-                        align-items: center; 
-                        margin-top: 10px; 
-                        margin-bottom: 5px; 
-                    }
-
-                    .logo-img { 
-                        height: 35px; 
-                        object-fit: contain; 
-                    }
-
-                    .info { 
-                        margin-top: 5px; 
-                        width: 60%; 
-                        float: left; 
-                    }
-
-                    .nome { 
-                        font-weight: bold; 
-                        font-size: 14px; 
-                        text-transform: uppercase; 
-                        color: #000; 
-                        line-height: 1.1; 
-                        margin-bottom: 6px; 
-                    }
-
-                    .matricula { 
-                        font-size: 11px; 
-                        color: #555; 
-                    }
-
-                    .segmento { 
-                        font-size: 10px; 
-                        background: #E3F2FD; 
-                        color: #1565C0; 
-                        padding: 3px 6px; 
-                        border-radius: 4px; 
-                        display: inline-block; 
-                        font-weight: bold; 
-                        margin-top: 5px; 
-                        border: 1px solid #BBDEFB;
-                    }
-
-                    .qr-container { 
-                        position: absolute; 
-                        bottom: 12px; 
-                        right: 12px; 
-                        border: 2px solid #D32F2F; 
-                        padding: 2px; 
-                        border-radius: 6px; 
-                        background: #fff;
-                    }
-
-                    @media print { 
-                        body { padding: 0; gap: 10px; } 
-                        .no-print { display: none; } 
-                        .cracha { border-color: #000; page-break-inside: avoid; } 
-                    }
-                    
-                </style>
-            </head>
-            <body>
-                <div class="no-print" style="width: 100%; text-align: center; margin-bottom: 20px;">
-                    <button onclick="window.print()" style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: #1565C0; color: white; border: none; border-radius: 8px; cursor: pointer;">🖨️ IMPRIMIR CRACHÁS</button>
-                    <p style="color: #666;">Nas configurações de impressão (Ctrl+P), ative a opção <b>"Gráficos de plano de fundo"</b>.</p>
-                </div>
-        `;
-
-        db_alunos.forEach((a, index) => {
-            html += `
-                <div class="cracha">
-                    <div class="logos">
-                        <img src="logos_ESEDRAT.png" class="logo-img" onerror="this.style.display='none'">
-                        <img src="logos_MG.png" class="logo-img" onerror="this.style.display='none'">
-                    </div>
-                    <div class="info">
-                        <div class="nome">${escapeHTML(a.nome)}</div>
-                        <div class="matricula">ID: ${escapeHTML(a.id)}</div>
-                        <div class="segmento">${escapeHTML(a.segmento)}</div>
-                    </div>
-                    <div class="qr-container" id="qr-${index}"></div>
-                </div>
-            `;
-        });
-
-        // Passando apenas o hash do aluno para o script nativo da janela de impressão
-        const hashes = db_alunos.map(a => a.hash);
-        
-        html += `
-                <script>
-                    window.onload = function() {
-                        const hashes = ${JSON.stringify(hashes)};
-                        hashes.forEach((hash, index) => {
-                            new QRCode(document.getElementById("qr-" + index), { text: hash, width: 85, height: 85, colorDark : "#000000", colorLight : "#ffffff" });
-                        });
-                    }
-                <\/script>
-            </body>
-            </html>
-        `;
-        
-        win.document.write(html);
-        win.document.close();
-    }
-
-    // --- PAINEL E DASHBOARD (Otimizado) ---
-    function calcularPrevisao() {
-        const contagemPorDia = {};
-        db_logs.forEach(l => contagemPorDia[l.data] = (contagemPorDia[l.data] || 0) + 1);
-        const labels = Object.keys(contagemPorDia).slice(-7);
-        const valores = labels.map(l => contagemPorDia[l]);
-        
-        renderGraficoGeral(labels, valores);
-
-        const resultDiv = document.getElementById('previsao-resultado');
-        if (valores.length === 0) {
-            resultDiv.innerHTML = "<strong>Sem histórico suficiente:</strong> Comece a registrar para ver as estimativas.";
-            resultDiv.className = "info-box info-blue";
-            return;
-        }
-        
-        const media = valores.reduce((a,b)=>a+b, 0) / valores.length;
-        const sugerido = Math.ceil(media * 1.1); // Margem de 10%
-        
-        resultDiv.innerHTML = `
-            <div style="font-size: 14px; color: #555;">Média dos últimos dias avaliados: <strong>${media.toFixed(1)} refeições/dia</strong></div>
-            <div style="font-size: 18px; color: var(--primary-blue); font-weight: bold; margin-top: 5px;">
-                🥘 Sugestão para Produção: ${sugerido} refeições
-            </div>
-        `;
-        simularDesperdicio();
-    }
-
-    function renderGraficoGeral(labels, dados) {
-        const ctx = document.getElementById('graficoFrequencia').getContext('2d');
-        
-        // Atualiza os dados em vez de destruir o canvas (Melhor performance)
-        if (chartInstance) {
-            chartInstance.data.labels = labels;
-            chartInstance.data.datasets[0].data = dados;
-            chartInstance.update();
-        } else {
-            chartInstance = new Chart(ctx, { 
-                type: 'bar', 
-                data: { labels: labels, datasets: [{ label: 'Refeições Consumidas', data: dados, backgroundColor: '#1565C0', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
-            });
-        }
-    }
-
-    function simularDesperdicio() {
-        const produzido = parseInt(document.getElementById('input-produzido').value);
-        const resultDiv = document.getElementById('resultado-simulacao');
-        
-        if (isNaN(produzido) || produzido <= 0) { resultDiv.innerHTML = ""; return; }
-
-        const contagem = Object.values(db_logs.reduce((acc, l) => { acc[l.data] = (acc[l.data]||0)+1; return acc; }, {}));
-        const media = contagem.length ? contagem.reduce((a,b)=>a+b,0)/contagem.length : 0;
-        
-        if (media === 0) return;
-
-        if (produzido > media) {
-            const sobra = Math.round(produzido - media);
-            resultDiv.innerHTML = `<div class="info-box info-red">⚠️ Risco de sobrar aprox. <b>${sobra} refeições</b> (baseado na média histórica).</div>`;
-        } else {
-            const falta = Math.round(media - produzido);
-            resultDiv.innerHTML = `<div class="info-box info-green">✅ Produção sem sobras. Atenção: pode faltar cerca de <b>${falta} refeições</b> se a demanda atingir a média.</div>`;
-        }
-    }
-
-    // --- EXPORTAÇÕES E BACKUP ---
-    function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
-        const blob = new Blob(["\ufeff" + conteudo], {type: tipoMime});
-        const a = document.createElement('a'); 
-        a.href = URL.createObjectURL(blob); 
-        a.download = nomeArquivo; 
-        document.body.appendChild(a); 
-        a.click(); 
-        document.body.removeChild(a);
-    }
-
-    // CSV Seguro
-    const formatarCSV = (val) => { const str = String(val).replace(/"/g, '""'); return str.includes(',') ? `"${str}"` : str; };
-
-    function exportarCSVLogs() {
-        if (db_logs.length === 0) return alert("Sem registros de refeições.");
-        let csv = "Data,Hora,Refeicao,Segmento,Matricula,Nome\n" + 
-                  db_logs.map(l => `${l.data},${l.hora},${l.refeicao},${formatarCSV(l.segmento)},${l.id},${formatarCSV(l.nome)}`).join("\n");
-        baixarArquivo(csv, gerarNomeArquivo('Cantina_Logs', 'csv'), 'text/csv;charset=utf-8;');
-    }
-
-    function exportarCSVAlunos() {
-        if (db_alunos.length === 0) return alert("Sem alunos cadastrados.");
-        let csv = "Nome,Matricula,Segmento\n" + db_alunos.map(a => `${formatarCSV(a.nome)},${a.id},${formatarCSV(a.segmento)}`).join("\n");
-        baixarArquivo(csv, gerarNomeArquivo('Lista_Alunos', 'csv'), 'text/csv;charset=utf-8;');
-    }
-
-    // XLSX Nativo usando SheetJS
-    function exportarXLSXLogs() {
-        if (db_logs.length === 0) return alert("Sem registros de refeições para exportar.");
-        const dados = db_logs.map(l => ({ "Data": l.data, "Hora": l.hora, "Refeição": l.refeicao, "Segmento": l.segmento, "Matrícula": l.id, "Nome do Aluno": l.nome }));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dados), "Histórico Cantina");
-        XLSX.writeFile(wb, gerarNomeArquivo('Cantina_Logs', 'xlsx'));
-    }
-
-    function exportarXLSXAlunos() {
-        if (db_alunos.length === 0) return alert("Sem alunos cadastrados para exportar.");
-        const dados = db_alunos.map(a => ({ "Nome Completo": a.nome, "Matrícula": a.id, "Segmento/Turma": a.segmento }));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dados), "Alunos Cadastrados");
-        XLSX.writeFile(wb, gerarNomeArquivo('Lista_Alunos', 'xlsx'));
-    }
-
-    // Backup em JSON (Novo Recurso de Segurança)
-    function baixarBackupJSON() {
-        const backupData = {
-            data_exportacao: new Date().toISOString(),
-            alunos: db_alunos,
-            logs: db_logs
-        };
-        const jsonStr = JSON.stringify(backupData, null, 2);
-        baixarArquivo(jsonStr, gerarNomeArquivo('Backup_Sistema_Refeitorio', 'json'), 'application/json');
-        alert("Backup baixado! Guarde este arquivo em um local seguro (pendrive, nuvem).");
-    }
-
-    // Limpeza Geral
-    function limparTudo() {
-        if(confirm("🛑 CUIDADO EXTREMO: Isso apagará TODOS OS ALUNOS e HISTÓRICO do navegador.\n\nRecomendamos baixar o Backup JSON antes. Tem absoluta certeza que deseja formatar o sistema?")) {
-            localStorage.removeItem('escola_alunos');
-            localStorage.removeItem('escola_logs');
-            alert("Sistema formatado com sucesso.");
-            location.reload();
-        }
-    }
-</script>
 </body>
 </html>
